@@ -10,7 +10,8 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "fastify": "latest"
+    "fastify": "latest",
+    "simple-git": "^4.0.2"
   },
   "devDependencies": {
     "@types/node": "latest",

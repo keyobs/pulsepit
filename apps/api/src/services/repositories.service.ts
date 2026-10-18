@@ -1,9 +1,12 @@
 import { lstat, readdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
+import { type GitStatus, getGitStatus } from './git.service.js';
 
 export interface Repository {
   name: string;
   path: string;
+  git: GitStatus | null;
+  gitError: string | null;
 }
 
 export async function findRepositories(
@@ -33,7 +36,19 @@ async function scanDirectory(scanPath: string): Promise<Repository[]> {
       // Git worktrees use a .git file instead of a directory.
       const gitEntry = await lstat(join(repositoryPath, '.git'));
       if (gitEntry.isDirectory() || gitEntry.isFile()) {
-        repositories.push({ name: entry.name, path: repositoryPath });
+        let git: GitStatus | null = null;
+        let gitError: string | null = null;
+        try {
+          git = await getGitStatus(repositoryPath);
+        } catch {
+          gitError = 'Unable to read Git status for this repository.';
+        }
+        repositories.push({
+          name: entry.name,
+          path: repositoryPath,
+          git,
+          gitError,
+        });
       }
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
