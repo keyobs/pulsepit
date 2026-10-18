@@ -4,7 +4,6 @@ import { findRepositories } from '../services/repositories.service.js';
 export const repositoriesRoutes: FastifyPluginAsync = async (app) => {
   // Configure the parent folder when starting the API.
   const scanPath = process.env.SCAN_PATH;
-  console.log(scanPath)
 
   app.get('/repositories', async (_request, reply) => {
     if (!scanPath) {
@@ -40,7 +39,6 @@ export const repositoriesRoutes: FastifyPluginAsync = async (app) => {
       });
     }
 
-    const repositories = await findRepositories(directories);
-    return { repositories };
+    return findRepositories(directories);
   });
 };

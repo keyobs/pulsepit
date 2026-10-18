@@ -11,21 +11,54 @@ export interface Repository {
   versions: PackageVersions;
 }
 
+export interface ScanError {
+  path: string;
+  code: string;
+  message: string;
+}
+
+export interface ScanResult {
+  repositories: Repository[];
+  scanErrors: ScanError[];
+}
+
+function describeScanError(path: string, error: unknown): ScanError {
+  const code = (error as NodeJS.ErrnoException).code ?? 'UNKNOWN';
+  const messages: Record<string, string> = {
+    ENOENT: 'Directory does not exist.',
+    ENOTDIR: 'Scan path is not a directory.',
+    EACCES: 'Permission denied while scanning directory.',
+    EPERM: 'Operation not permitted while scanning directory.',
+  };
+  return { path, code, message: messages[code] ?? 'Unable to scan directory.' };
+}
+
 export async function findRepositories(
   scanPath: string | string[],
-): Promise<Repository[]> {
+): Promise<ScanResult> {
   const paths = Array.isArray(scanPath) ? scanPath : [scanPath];
   const uniquePaths = [...new Set(paths.map((path) => resolve(path)))];
   const repositories: Repository[] = [];
+  const scanErrors: ScanError[] = [];
 
   for (const path of uniquePaths) {
-    repositories.push(...(await scanDirectory(path)));
+    try {
+      repositories.push(...(await scanDirectory(path, scanErrors)));
+    } catch (error) {
+      scanErrors.push(describeScanError(path, error));
+    }
   }
 
-  return repositories.sort((a, b) => a.name.localeCompare(b.name));
+  return {
+    repositories: repositories.sort((a, b) => a.name.localeCompare(b.name)),
+    scanErrors,
+  };
 }
 
-async function scanDirectory(scanPath: string): Promise<Repository[]> {
+async function scanDirectory(
+  scanPath: string,
+  scanErrors: ScanError[],
+): Promise<Repository[]> {
   const entries = await readdir(scanPath, { withFileTypes: true });
   const repositories: Repository[] = [];
 
@@ -54,7 +87,9 @@ async function scanDirectory(scanPath: string): Promise<Repository[]> {
         });
       }
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        scanErrors.push(describeScanError(repositoryPath, error));
+      }
     }
   }
 
