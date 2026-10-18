@@ -1,7 +1,6 @@
-import Fastify from 'fastify';
+import { buildApp } from './app.js';
 
-const app = Fastify({ logger: true });
-app.get('/api/health', async () => ({ status: 'ok', app: 'pulsepit-api' }));
+const app = buildApp();
 
 const port = Number(process.env.PORT ?? 3001);
 try {
