@@ -1,0 +1,7 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+# pnpm 12 : n'autoriser le script d'installation que pour esbuild.
+allowBuilds:
+  esbuild: true

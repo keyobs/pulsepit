@@ -1,0 +1,25 @@
+{
+  "name": "pulsepit",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@12.14.0",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "dev": "node scripts/run.mjs dev",
+    "dev:web": "node scripts/run.mjs dev:web",
+    "dev:api": "node scripts/run.mjs dev:api",
+    "build": "node scripts/run.mjs build",
+    "check-types": "node scripts/run.mjs check-types",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "smoke": "node scripts/smoke.mjs",
+    "turbo:build": "turbo run build",
+    "turbo:check-types": "turbo run check-types"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "latest",
+    "turbo": "latest"
+  }
+}
