@@ -1,12 +1,14 @@
 import { lstat, readdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { type GitStatus, getGitStatus } from './git.service.js';
+import { getPackageVersions, type PackageVersions } from './package.service.js';
 
 export interface Repository {
   name: string;
   path: string;
   git: GitStatus | null;
   gitError: string | null;
+  versions: PackageVersions;
 }
 
 export async function findRepositories(
@@ -48,6 +50,7 @@ async function scanDirectory(scanPath: string): Promise<Repository[]> {
           path: repositoryPath,
           git,
           gitError,
+          versions: await getPackageVersions(repositoryPath),
         });
       }
     } catch (error) {
