@@ -1,6 +1,7 @@
 import { loadEnvFile } from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { buildApp } from './app.js';
+import { readConfig } from './config.js';
 
 // Resolve from this file so development and compiled startup use the same .env.
 const envPath = fileURLToPath(new URL('../../../.env', import.meta.url));
@@ -11,11 +12,11 @@ try {
   if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
 }
 
-const app = buildApp();
+const config = readConfig();
+const app = buildApp(config);
 
-const port = Number(process.env.PORT ?? 3001);
 try {
-  await app.listen({ port, host: '127.0.0.1' });
+  await app.listen({ port: config.port, host: '127.0.0.1' });
 } catch (error) {
   app.log.error(error);
   process.exitCode = 1;
