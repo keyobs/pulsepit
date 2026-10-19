@@ -10,6 +10,7 @@ import {
   findRepositories,
 } from '../../services/repositories.service.js';
 import type { RepositoryUrls } from '../../services/repository-config.service.js';
+import { findWorkflowFiles } from '../../services/workflows.service.js';
 
 export const getRepositoriesRoutes: FastifyPluginAsync<
   Pick<AppConfig, 'scanPaths'> & {
@@ -28,6 +29,36 @@ export const getRepositoriesRoutes: FastifyPluginAsync<
       })),
     };
   });
+
+  app.get<{ Querystring: { path: string } }>(
+    '/workflows',
+    {
+      schema: {
+        querystring: {
+          type: 'object',
+          required: ['path'],
+          properties: {
+            path: { type: 'string', minLength: 1, pattern: '\\S' },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const repository = await findConfiguredRepository(
+        request.query.path,
+        options.scanPaths,
+      );
+      if (!repository) {
+        return reply.code(404).send({
+          error: 'Repository not found in configured scan directories.',
+        });
+      }
+      return {
+        path: repository.path,
+        ...(await findWorkflowFiles(repository.path)),
+      };
+    },
+  );
 
   app.get<{ Querystring: { path: string } }>(
     '/branches',
