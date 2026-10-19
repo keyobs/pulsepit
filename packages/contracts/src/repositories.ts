@@ -33,11 +33,20 @@ export const PackageManagerDetection = z.object({
 
 export type PackageManagerDetection = z.infer<typeof PackageManagerDetection>;
 
+export const RepositorySync = z.object({
+  upstream: z.string().nullable(),
+  ahead: z.number().int().nonnegative().nullable(),
+  behind: z.number().int().nonnegative().nullable(),
+});
+
+export type RepositorySync = z.infer<typeof RepositorySync>;
+
 export const Repository = z.object({
   name: z.string(),
   path: z.string(),
   git: GitStatus.nullable(),
   gitError: z.string().nullable(),
+  sync: RepositorySync.nullable(),
   versions: PackageVersions,
   engines: z.record(z.string(), z.string()).nullable(),
   enginesError: z.string().nullable(),

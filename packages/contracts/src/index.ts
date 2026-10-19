@@ -7,5 +7,6 @@ export {
   PackageVersion,
   PackageVersions,
   Repository,
+  RepositorySync,
   ScanError,
 } from './repositories.js';
