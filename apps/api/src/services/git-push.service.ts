@@ -8,7 +8,15 @@ export type GitPushResult =
   | { success: true }
   | {
       success: false;
-      code: 'INVALID_BRANCH' | 'BRANCH_NOT_FOUND' | 'PUSH_FAILED' | 'TIMEOUT';
+      code:
+        | 'INVALID_BRANCH'
+        | 'BRANCH_NOT_FOUND'
+        | 'REMOTE_NOT_FOUND'
+        | 'NON_FAST_FORWARD'
+        | 'REMOTE_REJECTED'
+        | 'AUTHENTICATION_FAILED'
+        | 'PUSH_FAILED'
+        | 'TIMEOUT';
       error: string;
     };
 
@@ -29,6 +37,7 @@ export async function pushRepositoryBranch(
         ...process.env,
         GIT_TERMINAL_PROMPT: '0',
         GCM_INTERACTIVE: 'Never',
+        LC_ALL: 'C',
       },
     });
   }
@@ -63,6 +72,17 @@ export async function pushRepositoryBranch(
       };
     }
 
+    try {
+      await run(['remote', 'get-url', '--push', 'origin']);
+    } catch (error) {
+      if ((error as { code?: number }).code !== 2) throw error;
+      return {
+        success: false,
+        code: 'REMOTE_NOT_FOUND',
+        error: 'No origin remote is configured for this repository.',
+      };
+    }
+
     // An explicit refspec selects exactly one local and one remote branch.
     // Disable mirror and automatic tag pushes even if configured locally.
     await run([
@@ -85,6 +105,45 @@ export async function pushRepositoryBranch(
         success: false,
         code: 'TIMEOUT',
         error: 'Git push timed out after 30 seconds.',
+      };
+    }
+    const failure = error as { stdout?: string; stderr?: string };
+    const output = failure.stdout ?? '';
+    // Parse only porcelain rejection records; free-form server messages may
+    // contain similar words without describing the actual push result.
+    const rejections = output
+      .split('\n')
+      .filter((line) => line.startsWith('!\t'));
+    if (
+      rejections.some((line) =>
+        /\t\[rejected\] \((?:non-fast-forward|fetch first)\)$/.test(line),
+      )
+    ) {
+      return {
+        success: false,
+        code: 'NON_FAST_FORWARD',
+        error:
+          'The remote branch contains commits missing locally. Fetch and integrate them before pushing.',
+      };
+    }
+    if (rejections.some((line) => /\t\[remote rejected\] \(.+\)$/.test(line))) {
+      return {
+        success: false,
+        code: 'REMOTE_REJECTED',
+        error:
+          'The remote server rejected the push. Check branch protection rules and server policies.',
+      };
+    }
+    if (
+      /fatal: Authentication failed|fatal: could not read (?:Username|Password)|Permission denied \((?:publickey|password)[^)]*\)|fatal:.*requested URL returned error: 401/i.test(
+        failure.stderr ?? '',
+      )
+    ) {
+      return {
+        success: false,
+        code: 'AUTHENTICATION_FAILED',
+        error:
+          'Git authentication failed. Check the credentials or SSH key used for origin.',
       };
     }
     return {

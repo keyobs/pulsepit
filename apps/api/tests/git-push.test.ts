@@ -165,8 +165,8 @@ test('push one selected local branch to origin', async (t) => {
       const remoteHead = await git(writer, 'rev-parse', 'HEAD');
       // The selected local branch still points at the earlier commit.
       const response = await push('feature/example');
-      assert.equal(response.statusCode, 502);
-      assert.equal(response.json().code, 'PUSH_FAILED');
+      assert.equal(response.statusCode, 409);
+      assert.equal(response.json().code, 'NON_FAST_FORWARD');
       assert.equal(
         await git(remote, 'rev-parse', 'refs/heads/feature/example'),
         remoteHead,
@@ -177,9 +177,9 @@ test('push one selected local branch to origin', async (t) => {
   await t.test('reports a missing origin remote', async () => {
     await git(repository, 'remote', 'remove', 'origin');
     const response = await push('main');
-    assert.equal(response.statusCode, 502);
+    assert.equal(response.statusCode, 422);
     assert.equal(response.json().success, false);
-    assert.equal(response.json().code, 'PUSH_FAILED');
+    assert.equal(response.json().code, 'REMOTE_NOT_FOUND');
   });
 
   await t.test('terminates a hung push after 30 seconds', async (r) => {
@@ -201,6 +201,7 @@ const args = process.argv.slice(2);
 assert.equal(process.env.GIT_TERMINAL_PROMPT, '0');
 if (args[0] === 'check-ref-format') assert.deepEqual(args, ['check-ref-format', 'refs/heads/main']);
 else if (args[0] === 'show-ref') assert.deepEqual(args, ['show-ref', '--verify', '--quiet', 'refs/heads/main']);
+else if (args[0] === 'remote') assert.deepEqual(args, ['remote', 'get-url', '--push', 'origin']);
 else {
   assert.deepEqual(args, ['-c', 'remote.origin.mirror=false', 'push', '--porcelain', '--no-follow-tags', '--', 'origin', 'refs/heads/main:refs/heads/main']);
   setInterval(() => {}, 1000);
