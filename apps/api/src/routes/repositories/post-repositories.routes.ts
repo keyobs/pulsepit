@@ -1,25 +1,14 @@
 import type { FastifyPluginAsync } from 'fastify';
-import type { AppConfig } from '../config.js';
-import { fetchRepository } from '../services/git.service.js';
-import { getOutdatedDependencies } from '../services/outdated.service.js';
-import {
-  getPackageManifest,
-  type PackageRef,
-} from '../services/package.service.js';
-import {
-  findConfiguredRepository,
-  findRepositories,
-} from '../services/repositories.service.js';
+import type { AppConfig } from '../../config.js';
+import { fetchRepository } from '../../services/git.service.js';
+import { getOutdatedDependencies } from '../../services/outdated.service.js';
+import { findConfiguredRepository } from '../../services/repositories.service.js';
 
-export const repositoriesRoutes: FastifyPluginAsync<
+export const postRepositoriesRoutes: FastifyPluginAsync<
   Pick<AppConfig, 'scanPaths'>
 > = async (app, options) => {
-  app.get('/repositories', async () => {
-    return findRepositories(options.scanPaths);
-  });
-
   app.post<{ Body: { path: string } }>(
-    '/repositories/fetch',
+    '/fetch',
     {
       schema: {
         body: {
@@ -52,7 +41,7 @@ export const repositoriesRoutes: FastifyPluginAsync<
   );
 
   app.post<{ Body: { path: string } }>(
-    '/repositories/outdated',
+    '/outdated',
     {
       schema: {
         body: {
@@ -86,40 +75,6 @@ export const repositoriesRoutes: FastifyPluginAsync<
         return reply.code(status).send(result);
       }
       return { path: repository.path, ...result };
-    },
-  );
-
-  app.get<{ Querystring: { path: string; ref?: PackageRef } }>(
-    '/repositories/package',
-    {
-      schema: {
-        querystring: {
-          type: 'object',
-          required: ['path'],
-          properties: {
-            path: { type: 'string', minLength: 1 },
-            ref: { type: 'string', enum: ['head', 'main', 'develop'] },
-          },
-        },
-      },
-    },
-    async (request, reply) => {
-      const { path, ref = 'head' } = request.query;
-      const repository = await findConfiguredRepository(
-        path,
-        options.scanPaths,
-      );
-      if (!repository) {
-        return reply.code(404).send({
-          error: 'Repository not found in configured scan directories.',
-        });
-      }
-
-      const result = await getPackageManifest(repository.path, ref);
-      if (result.manifest === null) {
-        return reply.code(422).send({ error: result.error });
-      }
-      return { path: repository.path, ref, manifest: result.manifest };
     },
   );
 };
