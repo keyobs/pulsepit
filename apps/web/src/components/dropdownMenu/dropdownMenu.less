@@ -1,0 +1,32 @@
+.pp-dropdown-menu {
+  display: flex;
+  flex-direction: column;
+
+  .pp-dropdown-menu-header {
+    padding: 6px 10px 4px;
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .pp-dropdown-menu-item {
+    display: flex;
+    gap: 6px;
+    padding: 6px 10px;
+    border: 0;
+    border-radius: 4px;
+    background: none;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    text-align: left;
+
+    &:hover {
+      background: var(--accent-soft);
+    }
+  }
+
+  .pp-dropdown-menu-hint {
+    color: var(--muted);
+  }
+}

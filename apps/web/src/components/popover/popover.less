@@ -1,0 +1,22 @@
+.pp-popover {
+  position: relative;
+
+  .pp-popover-panel {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 15;
+    min-width: 240px;
+    max-width: min(90vw, 520px);
+    padding: 4px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-s);
+    background: var(--surface);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+
+    &.end {
+      left: auto;
+      right: 0;
+    }
+  }
+}
