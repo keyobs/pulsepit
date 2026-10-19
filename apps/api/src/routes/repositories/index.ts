@@ -11,5 +11,8 @@ export const repositoriesRoutes: FastifyPluginAsync<
     scanPaths: options.scanPaths,
     repositoryUrls: options.repositoryUrls,
   });
-  app.register(postRepositoriesRoutes, { scanPaths: options.scanPaths });
+  app.register(postRepositoriesRoutes, {
+    scanPaths: options.scanPaths,
+    repositoryUrls: options.repositoryUrls,
+  });
 };
