@@ -1,0 +1,46 @@
+@import "@styles/mixins.less";
+
+.pp-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--surface);
+  color: var(--fg);
+  font-weight: 500;
+
+  &:hover:not(:disabled) {
+    border-color: var(--accent);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+
+  &.primary {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--accent-fg);
+  }
+
+  &.small {
+    padding: 3px 9px;
+    font-size: 12.5px;
+  }
+
+  &.icon-only {
+    padding: 6px 9px;
+  }
+
+  &.loading {
+    cursor: progress;
+  }
+
+  .pp-button-label {
+    .truncate();
+  }
+}

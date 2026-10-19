@@ -1,0 +1,31 @@
+.pp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: var(--surface-2);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: nowrap;
+
+  &.ok {
+    background: var(--ok-soft);
+    color: var(--ok);
+  }
+
+  &.warn {
+    background: var(--warn-soft);
+    color: var(--warn);
+  }
+
+  &.bad {
+    background: var(--bad-soft);
+    color: var(--bad);
+  }
+
+  &.accent {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+}

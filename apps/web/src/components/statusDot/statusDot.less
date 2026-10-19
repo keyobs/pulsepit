@@ -1,0 +1,20 @@
+.pp-status-dot {
+  display: inline-block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--off);
+
+  &.ok {
+    background: var(--ok);
+  }
+
+  &.warn {
+    background: var(--warn);
+  }
+
+  &.bad {
+    background: var(--bad);
+  }
+}
