@@ -1,6 +1,9 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import type { GitStatus } from '@pulsepit/contracts';
 import { simpleGit } from 'simple-git';
+
+export type { GitStatus } from '@pulsepit/contracts';
 
 const execute = promisify(execFile);
 
@@ -93,13 +96,6 @@ export async function fetchRepository(
         'Unable to fetch repository remotes. Check remote access and authentication.',
     };
   }
-}
-
-export interface GitStatus {
-  branch: string | null;
-  isClean: boolean;
-  changedFiles: number;
-  untrackedFiles: number;
 }
 
 export async function getGitStatus(repositoryPath: string): Promise<GitStatus> {

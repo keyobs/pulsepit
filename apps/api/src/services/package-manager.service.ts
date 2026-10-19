@@ -1,13 +1,10 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import type { PackageManagerDetection } from '@pulsepit/contracts';
 
-export type PackageManager = 'npm' | 'pnpm' | 'yarn';
+export type { PackageManagerDetection } from '@pulsepit/contracts';
 
-export interface PackageManagerDetection {
-  name: PackageManager | null;
-  source: 'packageManager' | 'lockfile' | null;
-  error: string | null;
-}
+export type PackageManager = NonNullable<PackageManagerDetection['name']>;
 
 export async function detectPackageManager(
   repositoryPath: string,

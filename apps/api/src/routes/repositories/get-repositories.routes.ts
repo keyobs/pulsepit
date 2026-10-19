@@ -1,4 +1,7 @@
-import type { OriginResponse } from '@pulsepit/contracts';
+import type {
+  ListRepositoriesResponse,
+  OriginResponse,
+} from '@pulsepit/contracts';
 import type { FastifyPluginAsync } from 'fastify';
 import type { AppConfig } from '../../config.js';
 import { getLocalBranches } from '../../services/git.service.js';
@@ -29,7 +32,7 @@ export const getRepositoriesRoutes: FastifyPluginAsync<
         urls: options.repositoryUrls[repository.path] ?? {},
         hosting: options.repositoryHosting[repository.path] ?? {},
       })),
-    };
+    } satisfies ListRepositoriesResponse;
   });
 
   app.get<{ Querystring: { path: string } }>(

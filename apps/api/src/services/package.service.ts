@@ -1,6 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import type { PackageVersion, PackageVersions } from '@pulsepit/contracts';
 import { simpleGit } from 'simple-git';
+
+export type { PackageVersion, PackageVersions } from '@pulsepit/contracts';
 
 export interface PackageEngines {
   engines: Record<string, string> | null;
@@ -54,7 +57,7 @@ export async function getPackageEngines(
   return { engines: engines as Record<string, string>, enginesError: null };
 }
 
-export type PackageRef = 'head' | 'main' | 'develop';
+export type PackageRef = keyof PackageVersions;
 
 const refs: Record<PackageRef, string> = {
   head: 'HEAD',
@@ -65,13 +68,6 @@ const refs: Record<PackageRef, string> = {
 export type PackageManifestResult =
   | { manifest: Record<string, unknown>; error: null }
   | { manifest: null; error: string };
-
-export interface PackageVersion {
-  version: string | null;
-  error: string | null;
-}
-
-export type PackageVersions = Record<PackageRef, PackageVersion>;
 
 export async function getPackageManifest(
   repositoryPath: string,

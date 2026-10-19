@@ -1,36 +1,19 @@
 import { lstat, readdir } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
-import type { OriginRemote } from '@pulsepit/contracts';
-import { type GitStatus, getGitStatus } from './git.service.js';
+import type {
+  GitStatus,
+  Repository as RepositoryContract,
+  ScanError,
+} from '@pulsepit/contracts';
+import { getGitStatus } from './git.service.js';
 import { getOriginRemote } from './git-origin.service.js';
-import {
-  getPackageEngines,
-  getPackageVersions,
-  type PackageVersions,
-} from './package.service.js';
-import {
-  detectPackageManager,
-  type PackageManagerDetection,
-} from './package-manager.service.js';
+import { getPackageEngines, getPackageVersions } from './package.service.js';
+import { detectPackageManager } from './package-manager.service.js';
 
-export interface Repository {
-  name: string;
-  path: string;
-  git: GitStatus | null;
-  gitError: string | null;
-  versions: PackageVersions;
-  engines: Record<string, string> | null;
-  enginesError: string | null;
-  packageManager: PackageManagerDetection;
-  origin: OriginRemote | null;
-  originError: string | null;
-}
+// Deployment links are added by the route after scanning local repositories.
+export type Repository = Omit<RepositoryContract, 'urls' | 'hosting'>;
 
-export interface ScanError {
-  path: string;
-  code: string;
-  message: string;
-}
+export type { ScanError } from '@pulsepit/contracts';
 
 export interface ScanResult {
   repositories: Repository[];
