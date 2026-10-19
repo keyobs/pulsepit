@@ -1,0 +1,62 @@
+// Thème clair par défaut, thème sombre via la préférence système ou data-theme="dark".
+:root {
+  --bg: #f3f5f9;
+  --surface: #ffffff;
+  --surface-2: #eaeef5;
+  --panel: #e4e9f2;
+  --line: #d9dfea;
+  --fg: #141b2d;
+  --muted: #5d6881;
+  --accent: #2f5bea;
+  --accent-fg: #ffffff;
+  --accent-soft: #e3eaff;
+  --ok: #14804a;
+  --ok-soft: #dcf3e5;
+  --warn: #a15c00;
+  --warn-soft: #fdeccd;
+  --bad: #c0302b;
+  --bad-soft: #fbe0de;
+  --off: #8b94a8;
+  --fetch: #0b7f99;
+  --push: #b4189a;
+
+  --font-display: "Bricolage Grotesque", system-ui, sans-serif;
+  --font-body: "Instrument Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --radius-s: 6px;
+  --radius-m: 8px;
+}
+
+.dark-tokens() {
+  --bg: #0d1220;
+  --surface: #151c2e;
+  --surface-2: #1c2540;
+  --panel: #0c0f14b5;
+  --line: #2a3452;
+  --fg: #e7ebf5;
+  --muted: #93a0bd;
+  --accent: #7b9cff;
+  --accent-fg: #0d1220;
+  --accent-soft: #22305c;
+  --ok: #4cc88a;
+  --ok-soft: #173a2b;
+  --warn: #f0b04a;
+  --warn-soft: #3d2d10;
+  --bad: #ff7b75;
+  --bad-soft: #431b1a;
+  --off: #6c7792;
+  --fetch: #55cfe8;
+  --push: #f272d9;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    .dark-tokens();
+  }
+}
+
+:root[data-theme="dark"] {
+  .dark-tokens();
+}

@@ -1,7 +1,7 @@
 import { loadEnvFile } from 'node:process';
 import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 
 try {
   loadEnvFile(fileURLToPath(new URL('../../.env', import.meta.url)));
@@ -26,8 +26,30 @@ function readPort(name: string, fallback: number): number {
 const webPort = readPort('WEB_PORT', 5173);
 const apiPort = readPort('PORT', 3001);
 
+const alias = Object.fromEntries(
+  [
+    'api',
+    'components',
+    'constants',
+    'features',
+    'hooks',
+    'styles',
+    'utils',
+  ].map((name) => [
+    `@${name}`,
+    fileURLToPath(new URL(`./src/${name}`, import.meta.url)),
+  ]),
+);
+
 export default defineConfig({
   plugins: [react()],
+  resolve: { alias },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./src/test/setup.ts'],
+    css: false,
+  },
   server: {
     port: webPort,
     strictPort: true,
