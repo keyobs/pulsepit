@@ -1,6 +1,7 @@
 import { resolve } from 'node:path';
 import type { FastifyPluginAsync } from 'fastify';
 import type { AppConfig } from '../config.js';
+import { getOutdatedDependencies } from '../services/outdated.service.js';
 import {
   getPackageManifest,
   type PackageRef,
@@ -13,6 +14,44 @@ export const repositoriesRoutes: FastifyPluginAsync<
   app.get('/repositories', async () => {
     return findRepositories(options.scanPaths);
   });
+
+  app.post<{ Body: { path: string } }>(
+    '/repositories/outdated',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['path'],
+          properties: {
+            path: { type: 'string', minLength: 1, pattern: '\\S' },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { repositories } = await findRepositories(options.scanPaths);
+      const repository = repositories.find(
+        (repo) => repo.path === resolve(request.body.path),
+      );
+      if (!repository) {
+        return reply.code(404).send({
+          error: 'Repository not found in configured scan directories.',
+        });
+      }
+
+      const result = await getOutdatedDependencies(repository.path);
+      if (result.error !== null) {
+        const status =
+          result.code === 'PACKAGE_MANAGER'
+            ? 422
+            : result.code === 'TIMEOUT'
+              ? 504
+              : 502;
+        return reply.code(status).send(result);
+      }
+      return { path: repository.path, ...result };
+    },
+  );
 
   app.get<{ Querystring: { path: string; ref?: PackageRef } }>(
     '/repositories/package',
@@ -35,11 +74,9 @@ export const repositoriesRoutes: FastifyPluginAsync<
         (repo) => repo.path === resolve(path),
       );
       if (!repository) {
-        return reply
-          .code(404)
-          .send({
-            error: 'Repository not found in configured scan directories.',
-          });
+        return reply.code(404).send({
+          error: 'Repository not found in configured scan directories.',
+        });
       }
 
       const result = await getPackageManifest(repository.path, ref);
