@@ -48,6 +48,18 @@ jobs:
         pull_request: { include: [], exclude: ['legacy'] },
       },
       jobs: ['build', 'reusable'],
+      environments: [],
+      deployment: {
+        status: 'unknown',
+        evidence: [
+          {
+            job: 'reusable',
+            source: 'reusable_workflow',
+            confidence: 'unknown',
+            message: 'The reusable workflow content has not been inspected.',
+          },
+        ],
+      },
     });
   });
 

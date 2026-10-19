@@ -2,8 +2,13 @@ import { constants } from 'node:fs';
 import { open } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parseDocument } from 'yaml';
+import {
+  type GithubDeploymentAnalysis,
+  InvalidDeploymentMetadata,
+  inspectGithubDeployments,
+} from './github-deployment.service.js';
 
-export interface GithubWorkflowAnalysis {
+export interface GithubWorkflowAnalysis extends GithubDeploymentAnalysis {
   name: string;
   on: string[];
   branches: string[];
@@ -141,6 +146,7 @@ export function parseGithubWorkflow(
         ],
         branchFilters,
         jobs: Object.keys(data.jobs),
+        ...inspectGithubDeployments(data.jobs),
       },
       analysisError: null,
     };
@@ -150,7 +156,8 @@ export function parseGithubWorkflow(
       analysisError: {
         code: 'INVALID_WORKFLOW',
         message:
-          error instanceof InvalidWorkflow
+          error instanceof InvalidWorkflow ||
+          error instanceof InvalidDeploymentMetadata
             ? error.message
             : 'Unable to extract workflow metadata.',
       },
