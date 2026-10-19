@@ -1,0 +1,26 @@
+.pp-key-value-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 5px 14px;
+  margin: 0;
+  font-size: 13px;
+
+  // Chaque ligne s'étale sur les deux colonnes de la grille parente.
+  .pp-key-value-list-row {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1;
+  }
+
+  dt {
+    color: var(--muted);
+  }
+
+  dd {
+    min-width: 0;
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    overflow-wrap: anywhere;
+  }
+}
