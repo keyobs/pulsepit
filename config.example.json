@@ -1,0 +1,10 @@
+{
+  "repositories": {
+    "/absolute/path/to/repository": {
+      "urls": {
+        "production": "https://app.example.com",
+        "staging": "https://staging.example.com"
+      }
+    }
+  }
+}

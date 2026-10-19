@@ -1,11 +1,16 @@
-import { resolve } from 'node:path';
+import { homedir } from 'node:os';
+import { join, resolve } from 'node:path';
 
 export interface AppConfig {
   port: number;
   scanPaths: string[];
+  configPath?: string;
 }
 
 export function readConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
+  if (env.CONFIG_PATH !== undefined && !env.CONFIG_PATH.trim()) {
+    throw new Error('CONFIG_PATH must contain a non-empty file path.');
+  }
   const rawPaths = env.SCAN_PATH;
   if (!rawPaths?.trim()) {
     throw new Error(
@@ -51,5 +56,13 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   return {
     port,
     scanPaths: [...new Set(directories.map((path) => resolve(path)))],
+    configPath: resolve(
+      env.CONFIG_PATH ??
+        join(
+          env.XDG_CONFIG_HOME || join(homedir(), '.config'),
+          'pulsepit',
+          'config.json',
+        ),
+    ),
   };
 }

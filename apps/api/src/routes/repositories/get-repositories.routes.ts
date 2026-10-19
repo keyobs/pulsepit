@@ -9,12 +9,20 @@ import {
   findConfiguredRepository,
   findRepositories,
 } from '../../services/repositories.service.js';
+import type { RepositoryUrls } from '../../services/repository-config.service.js';
 
 export const getRepositoriesRoutes: FastifyPluginAsync<
-  Pick<AppConfig, 'scanPaths'>
+  Pick<AppConfig, 'scanPaths'> & { repositoryUrls: RepositoryUrls }
 > = async (app, options) => {
   app.get('', async () => {
-    return findRepositories(options.scanPaths);
+    const result = await findRepositories(options.scanPaths);
+    return {
+      ...result,
+      repositories: result.repositories.map((repository) => ({
+        ...repository,
+        urls: options.repositoryUrls[repository.path] ?? {},
+      })),
+    };
   });
 
   app.get<{ Querystring: { path: string } }>(
@@ -36,11 +44,9 @@ export const getRepositoriesRoutes: FastifyPluginAsync<
         options.scanPaths,
       );
       if (!repository) {
-        return reply
-          .code(404)
-          .send({
-            error: 'Repository not found in configured scan directories.',
-          });
+        return reply.code(404).send({
+          error: 'Repository not found in configured scan directories.',
+        });
       }
       const result = await getLocalBranches(repository.path);
       if (result.error !== null) {
