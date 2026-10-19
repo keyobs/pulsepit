@@ -1,4 +1,58 @@
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { simpleGit } from 'simple-git';
+
+export interface PackageEngines {
+  engines: Record<string, string> | null;
+  enginesError: string | null;
+}
+
+export async function getPackageEngines(
+  repositoryPath: string,
+): Promise<PackageEngines> {
+  let manifest: unknown;
+  try {
+    manifest = JSON.parse(
+      await readFile(join(repositoryPath, 'package.json'), 'utf8'),
+    );
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return { engines: null, enginesError: null };
+    }
+    return {
+      engines: null,
+      enginesError:
+        'Unable to read a valid package.json from the working directory.',
+    };
+  }
+
+  if (
+    typeof manifest !== 'object' ||
+    manifest === null ||
+    Array.isArray(manifest)
+  ) {
+    return {
+      engines: null,
+      enginesError: 'package.json must contain a JSON object.',
+    };
+  }
+  if (!('engines' in manifest)) return { engines: null, enginesError: null };
+
+  const engines = manifest.engines;
+  if (
+    typeof engines !== 'object' ||
+    engines === null ||
+    Array.isArray(engines) ||
+    !Object.values(engines).every((value) => typeof value === 'string')
+  ) {
+    return {
+      engines: null,
+      enginesError:
+        'The engines field must be an object containing string values.',
+    };
+  }
+  return { engines: engines as Record<string, string>, enginesError: null };
+}
 
 export type PackageRef = 'head' | 'main' | 'develop';
 

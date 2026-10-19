@@ -1,7 +1,15 @@
 import { lstat, readdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { type GitStatus, getGitStatus } from './git.service.js';
-import { getPackageVersions, type PackageVersions } from './package.service.js';
+import {
+  getPackageEngines,
+  getPackageVersions,
+  type PackageVersions,
+} from './package.service.js';
+import {
+  detectPackageManager,
+  type PackageManagerDetection,
+} from './package-manager.service.js';
 
 export interface Repository {
   name: string;
@@ -9,6 +17,9 @@ export interface Repository {
   git: GitStatus | null;
   gitError: string | null;
   versions: PackageVersions;
+  engines: Record<string, string> | null;
+  enginesError: string | null;
+  packageManager: PackageManagerDetection;
 }
 
 export interface ScanError {
@@ -84,6 +95,8 @@ async function scanDirectory(
           git,
           gitError,
           versions: await getPackageVersions(repositoryPath),
+          ...(await getPackageEngines(repositoryPath)),
+          packageManager: await detectPackageManager(repositoryPath),
         });
       }
     } catch (error) {
