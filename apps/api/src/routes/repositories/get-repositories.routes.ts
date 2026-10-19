@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import type { AppConfig } from '../../config.js';
 import { getLocalBranches } from '../../services/git.service.js';
+import { getOriginRemote } from '../../services/git-origin.service.js';
 import {
   getPackageManifest,
   type PackageRef,
@@ -29,6 +30,36 @@ export const getRepositoriesRoutes: FastifyPluginAsync<
       })),
     };
   });
+
+  app.get<{ Querystring: { path: string } }>(
+    '/origin',
+    {
+      schema: {
+        querystring: {
+          type: 'object',
+          required: ['path'],
+          properties: {
+            path: { type: 'string', minLength: 1, pattern: '\\S' },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const repository = await findConfiguredRepository(
+        request.query.path,
+        options.scanPaths,
+      );
+      if (!repository) {
+        return reply.code(404).send({
+          error: 'Repository not found in configured scan directories.',
+        });
+      }
+      return {
+        path: repository.path,
+        ...(await getOriginRemote(repository.path)),
+      };
+    },
+  );
 
   app.get<{ Querystring: { path: string } }>(
     '/workflows',

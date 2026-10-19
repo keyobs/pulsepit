@@ -1,6 +1,7 @@
 import { lstat, readdir } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
 import { type GitStatus, getGitStatus } from './git.service.js';
+import { getOriginRemote, type OriginRemote } from './git-origin.service.js';
 import {
   getPackageEngines,
   getPackageVersions,
@@ -20,6 +21,8 @@ export interface Repository {
   engines: Record<string, string> | null;
   enginesError: string | null;
   packageManager: PackageManagerDetection;
+  origin: OriginRemote | null;
+  originError: string | null;
 }
 
 export interface ScanError {
@@ -123,6 +126,7 @@ async function scanDirectory(
           versions: await getPackageVersions(repositoryPath),
           ...(await getPackageEngines(repositoryPath)),
           packageManager: await detectPackageManager(repositoryPath),
+          ...(await getOriginRemote(repositoryPath)),
         });
       }
     } catch (error) {
