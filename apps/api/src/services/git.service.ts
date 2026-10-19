@@ -4,6 +4,60 @@ import { simpleGit } from 'simple-git';
 
 const execute = promisify(execFile);
 
+export interface LocalBranch {
+  name: string;
+  isCurrent: boolean;
+}
+
+export type LocalBranchesResult =
+  | { branches: LocalBranch[]; error: null }
+  | { code: 'BRANCHES_FAILED' | 'TIMEOUT'; error: string };
+
+export async function getLocalBranches(
+  repositoryPath: string,
+): Promise<LocalBranchesResult> {
+  try {
+    const { stdout } = await execute(
+      'git',
+      [
+        'for-each-ref',
+        '--sort=refname',
+        '--format=%(refname)%00%(HEAD)',
+        'refs/heads/',
+      ],
+      {
+        cwd: repositoryPath,
+        timeout: 10_000,
+        killSignal: 'SIGKILL',
+        maxBuffer: 1024 * 1024,
+        encoding: 'utf8',
+      },
+    );
+    const branches = stdout
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => {
+        const [ref, head] = line.split('\0');
+        return {
+          name: ref.slice('refs/heads/'.length),
+          isCurrent: head === '*',
+        };
+      });
+    return { branches, error: null };
+  } catch (error) {
+    if ((error as { signal?: string }).signal === 'SIGKILL') {
+      return {
+        code: 'TIMEOUT',
+        error: 'Reading local branches timed out after 10 seconds.',
+      };
+    }
+    return {
+      code: 'BRANCHES_FAILED',
+      error: 'Unable to read local branches for this repository.',
+    };
+  }
+}
+
 export type GitFetchResult =
   | { success: true }
   | { success: false; code: 'FETCH_FAILED' | 'TIMEOUT'; error: string };

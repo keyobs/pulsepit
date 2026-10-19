@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import type { AppConfig } from '../../config.js';
+import { getLocalBranches } from '../../services/git.service.js';
 import {
   getPackageManifest,
   type PackageRef,
@@ -15,6 +16,39 @@ export const getRepositoriesRoutes: FastifyPluginAsync<
   app.get('', async () => {
     return findRepositories(options.scanPaths);
   });
+
+  app.get<{ Querystring: { path: string } }>(
+    '/branches',
+    {
+      schema: {
+        querystring: {
+          type: 'object',
+          required: ['path'],
+          properties: {
+            path: { type: 'string', minLength: 1, pattern: '\\S' },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const repository = await findConfiguredRepository(
+        request.query.path,
+        options.scanPaths,
+      );
+      if (!repository) {
+        return reply
+          .code(404)
+          .send({
+            error: 'Repository not found in configured scan directories.',
+          });
+      }
+      const result = await getLocalBranches(repository.path);
+      if (result.error !== null) {
+        return reply.code(result.code === 'TIMEOUT' ? 504 : 502).send(result);
+      }
+      return { path: repository.path, branches: result.branches };
+    },
+  );
 
   app.get<{ Querystring: { path: string; ref?: PackageRef } }>(
     '/package',
