@@ -6,6 +6,7 @@ import type {
   ScanError,
 } from '@pulsepit/contracts';
 import { getGitStatus } from './git.service.js';
+import { getDevelopLastCommitAt } from './git-commit.service.js';
 import { getOriginRemote } from './git-origin.service.js';
 import { getGitSync } from './git-sync.service.js';
 import { getPackageEngines, getPackageVersions } from './package.service.js';
@@ -112,6 +113,7 @@ async function scanDirectory(
           gitError,
           sync:
             git === null ? null : await getGitSync(repositoryPath, git.branch),
+          developLastCommitAt: await getDevelopLastCommitAt(repositoryPath),
           versions: await getPackageVersions(repositoryPath),
           ...(await getPackageEngines(repositoryPath)),
           packageManager: await detectPackageManager(repositoryPath),

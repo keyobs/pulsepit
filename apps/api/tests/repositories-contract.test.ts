@@ -66,6 +66,7 @@ test('repository list satisfies the shared contract with Git, package and deploy
     git: { branch: 'main', isClean: true, changedFiles: 0, untrackedFiles: 0 },
     gitError: null,
     sync: { upstream: null, ahead: null, behind: null },
+    developLastCommitAt: null,
     versions: {
       head: { version: '1.2.3', error: null },
       main: { version: '1.2.3', error: null },
@@ -156,6 +157,7 @@ test('repository contract rejects incompatible mock formats and missing nullable
     git: null,
     gitError: null,
     sync: null,
+    developLastCommitAt: null,
     versions: {
       head: { version: null, error: null },
       main: { version: null, error: null },
