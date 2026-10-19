@@ -17,6 +17,15 @@ Monorepo **pnpm Workspaces + Turborepo + React/Vite + Fastify + TypeScript + Bio
 
 Si pnpm 12 rencontre un problème de lancement des scripts, utilise directement `node scripts/run.mjs dev` : il ne lance aucun sous-processus pnpm.
 
+Les ports se configurent dans le fichier `.env` à la racine :
+
+```dotenv
+PORT=3001
+WEB_PORT=5173
+```
+
+`PORT` correspond à l’API et `WEB_PORT` au frontend. Le proxy `/api` utilise automatiquement `PORT`. Relance les serveurs après une modification. Si un port est déjà occupé, choisis un autre numéro, par exemple `WEB_PORT=5174`.
+
 ## Vérifications
 
 - `pnpm check-types` : TypeScript API puis Web, sans Turbo.
