@@ -10,7 +10,7 @@ import {
   findRepositories,
 } from '../../services/repositories.service.js';
 import type { RepositoryUrls } from '../../services/repository-config.service.js';
-import { findWorkflowFiles } from '../../services/workflows.service.js';
+import { getRepositoryWorkflows } from '../../services/workflows.service.js';
 
 export const getRepositoriesRoutes: FastifyPluginAsync<
   Pick<AppConfig, 'scanPaths'> & {
@@ -55,7 +55,7 @@ export const getRepositoriesRoutes: FastifyPluginAsync<
       }
       return {
         path: repository.path,
-        ...(await findWorkflowFiles(repository.path)),
+        ...(await getRepositoryWorkflows(repository.path)),
       };
     },
   );

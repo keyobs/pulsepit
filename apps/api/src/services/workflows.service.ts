@@ -1,5 +1,6 @@
 import { lstat, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
+import { analyzeGithubWorkflow } from './github-workflow.service.js';
 
 export interface WorkflowFile {
   provider: 'github-actions' | 'gitlab-ci';
@@ -15,6 +16,23 @@ export interface WorkflowScanError {
 export interface WorkflowDiscovery {
   workflows: WorkflowFile[];
   errors: WorkflowScanError[];
+}
+
+export async function getRepositoryWorkflows(repositoryPath: string) {
+  const discovered = await findWorkflowFiles(repositoryPath);
+  const workflows = [];
+  // Process files sequentially to bound file buffers and preserve discovery order.
+  for (const workflow of discovered.workflows) {
+    workflows.push(
+      workflow.provider === 'github-actions'
+        ? {
+            ...workflow,
+            ...(await analyzeGithubWorkflow(repositoryPath, workflow.file)),
+          }
+        : workflow,
+    );
+  }
+  return { workflows, errors: discovered.errors };
 }
 
 export async function findWorkflowFiles(
