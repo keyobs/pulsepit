@@ -1,4 +1,3 @@
-import { resolve } from 'node:path';
 import type { FastifyPluginAsync } from 'fastify';
 import type { AppConfig } from '../config.js';
 import { getOutdatedDependencies } from '../services/outdated.service.js';
@@ -6,7 +5,10 @@ import {
   getPackageManifest,
   type PackageRef,
 } from '../services/package.service.js';
-import { findRepositories } from '../services/repositories.service.js';
+import {
+  findConfiguredRepository,
+  findRepositories,
+} from '../services/repositories.service.js';
 
 export const repositoriesRoutes: FastifyPluginAsync<
   Pick<AppConfig, 'scanPaths'>
@@ -29,9 +31,9 @@ export const repositoriesRoutes: FastifyPluginAsync<
       },
     },
     async (request, reply) => {
-      const { repositories } = await findRepositories(options.scanPaths);
-      const repository = repositories.find(
-        (repo) => repo.path === resolve(request.body.path),
+      const repository = await findConfiguredRepository(
+        request.body.path,
+        options.scanPaths,
       );
       if (!repository) {
         return reply.code(404).send({
@@ -69,9 +71,9 @@ export const repositoriesRoutes: FastifyPluginAsync<
     },
     async (request, reply) => {
       const { path, ref = 'head' } = request.query;
-      const { repositories } = await findRepositories(options.scanPaths);
-      const repository = repositories.find(
-        (repo) => repo.path === resolve(path),
+      const repository = await findConfiguredRepository(
+        path,
+        options.scanPaths,
       );
       if (!repository) {
         return reply.code(404).send({

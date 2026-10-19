@@ -1,5 +1,5 @@
 import { lstat, readdir } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { type GitStatus, getGitStatus } from './git.service.js';
 import {
   getPackageEngines,
@@ -31,6 +31,32 @@ export interface ScanError {
 export interface ScanResult {
   repositories: Repository[];
   scanErrors: ScanError[];
+}
+
+export async function findConfiguredRepository(
+  repositoryPath: string,
+  scanPaths: string[],
+): Promise<Pick<Repository, 'name' | 'path'> | null> {
+  const path = resolve(repositoryPath);
+  if (
+    !scanPaths.some((scanPath) => {
+      const parent = resolve(scanPath);
+      return path !== parent && dirname(path) === parent;
+    })
+  ) {
+    return null;
+  }
+
+  try {
+    // Match the scan: direct directories only, without following symlinks.
+    const directory = await lstat(path);
+    if (!directory.isDirectory()) return null;
+    const gitEntry = await lstat(join(path, '.git'));
+    if (!gitEntry.isDirectory() && !gitEntry.isFile()) return null;
+    return { name: basename(path), path };
+  } catch {
+    return null;
+  }
 }
 
 function describeScanError(path: string, error: unknown): ScanError {
