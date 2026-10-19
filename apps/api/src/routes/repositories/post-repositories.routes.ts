@@ -1,12 +1,56 @@
 import type { FastifyPluginAsync } from 'fastify';
 import type { AppConfig } from '../../config.js';
 import { fetchRepository } from '../../services/git.service.js';
+import { pushRepositoryBranch } from '../../services/git-push.service.js';
 import { getOutdatedDependencies } from '../../services/outdated.service.js';
 import { findConfiguredRepository } from '../../services/repositories.service.js';
 
 export const postRepositoriesRoutes: FastifyPluginAsync<
   Pick<AppConfig, 'scanPaths'>
 > = async (app, options) => {
+  app.post<{ Body: { path: string; branch: string } }>(
+    '/push',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['path', 'branch'],
+          properties: {
+            path: { type: 'string', minLength: 1, pattern: '\\S' },
+            branch: { type: 'string', minLength: 1, pattern: '\\S' },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { path, branch } = request.body;
+      const repository = await findConfiguredRepository(
+        path,
+        options.scanPaths,
+      );
+      if (!repository) {
+        return reply.code(404).send({
+          error: 'Repository not found in configured scan directories.',
+        });
+      }
+      const result = await pushRepositoryBranch(repository.path, branch);
+      if (!result.success) {
+        const status =
+          result.code === 'INVALID_BRANCH'
+            ? 400
+            : result.code === 'BRANCH_NOT_FOUND'
+              ? 404
+              : result.code === 'TIMEOUT'
+                ? 504
+                : 502;
+        return reply
+          .code(status)
+          .send({ path: repository.path, branch, ...result });
+      }
+      return { path: repository.path, branch, remote: 'origin', success: true };
+    },
+  );
+
   app.post<{ Body: { path: string } }>(
     '/fetch',
     {
