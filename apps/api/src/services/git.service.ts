@@ -1,4 +1,45 @@
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { simpleGit } from 'simple-git';
+
+const execute = promisify(execFile);
+
+export type GitFetchResult =
+  | { success: true }
+  | { success: false; code: 'FETCH_FAILED' | 'TIMEOUT'; error: string };
+
+export async function fetchRepository(
+  repositoryPath: string,
+): Promise<GitFetchResult> {
+  try {
+    await execute('git', ['fetch', '--all', '--prune'], {
+      cwd: repositoryPath,
+      timeout: 30_000,
+      killSignal: 'SIGKILL',
+      maxBuffer: 1024 * 1024,
+      env: {
+        ...process.env,
+        GIT_TERMINAL_PROMPT: '0',
+        GCM_INTERACTIVE: 'Never',
+      },
+    });
+    return { success: true };
+  } catch (error) {
+    if ((error as { signal?: string }).signal === 'SIGKILL') {
+      return {
+        success: false,
+        code: 'TIMEOUT',
+        error: 'Git fetch timed out after 30 seconds.',
+      };
+    }
+    return {
+      success: false,
+      code: 'FETCH_FAILED',
+      error:
+        'Unable to fetch repository remotes. Check remote access and authentication.',
+    };
+  }
+}
 
 export interface GitStatus {
   branch: string | null;
