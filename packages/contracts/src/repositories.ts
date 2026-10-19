@@ -59,6 +59,7 @@ export const ScanError = z.object({
 export type ScanError = z.infer<typeof ScanError>;
 
 export const ListRepositoriesResponse = z.object({
+  scanPaths: z.array(z.string()),
   repositories: z.array(Repository),
   scanErrors: z.array(ScanError),
 });

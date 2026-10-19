@@ -21,7 +21,11 @@ test('repository route registration after grouping by HTTP method', async (t) =>
         url: '/api/repositories',
       });
       assert.equal(response.statusCode, 200);
-      assert.deepEqual(response.json(), { repositories: [], scanErrors: [] });
+      assert.deepEqual(response.json(), {
+        scanPaths: [root],
+        repositories: [],
+        scanErrors: [],
+      });
     },
   );
 

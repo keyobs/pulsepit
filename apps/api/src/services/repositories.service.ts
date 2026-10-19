@@ -16,6 +16,7 @@ export type Repository = Omit<RepositoryContract, 'urls' | 'hosting'>;
 export type { ScanError } from '@pulsepit/contracts';
 
 export interface ScanResult {
+  scanPaths: string[];
   repositories: Repository[];
   scanErrors: ScanError[];
 }
@@ -74,6 +75,7 @@ export async function findRepositories(
   }
 
   return {
+    scanPaths: uniquePaths,
     repositories: repositories.sort((a, b) => a.name.localeCompare(b.name)),
     scanErrors,
   };
