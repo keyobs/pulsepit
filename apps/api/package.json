@@ -11,6 +11,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "@pulsepit/contracts": "workspace:*",
     "fastify": "latest",
     "simple-git": "^4.0.2",
     "yaml": "^2.9.1"

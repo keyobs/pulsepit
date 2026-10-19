@@ -1,3 +1,4 @@
+import type { OriginResponse } from '@pulsepit/contracts';
 import type { FastifyPluginAsync } from 'fastify';
 import type { AppConfig } from '../../config.js';
 import { getLocalBranches } from '../../services/git.service.js';
@@ -57,7 +58,7 @@ export const getRepositoriesRoutes: FastifyPluginAsync<
       return {
         path: repository.path,
         ...(await getOriginRemote(repository.path)),
-      };
+      } satisfies OriginResponse;
     },
   );
 

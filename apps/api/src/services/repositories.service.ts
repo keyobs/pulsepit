@@ -1,7 +1,8 @@
 import { lstat, readdir } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
+import type { OriginRemote } from '@pulsepit/contracts';
 import { type GitStatus, getGitStatus } from './git.service.js';
-import { getOriginRemote, type OriginRemote } from './git-origin.service.js';
+import { getOriginRemote } from './git-origin.service.js';
 import {
   getPackageEngines,
   getPackageVersions,

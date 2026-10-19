@@ -1,25 +1,13 @@
 import { execFile } from 'node:child_process';
 import { isAbsolute } from 'node:path';
 import { promisify } from 'node:util';
+import type { OriginRemote, OriginResponse } from '@pulsepit/contracts';
 
 const execute = promisify(execFile);
 
-export interface GithubRepositoryIdentity {
-  owner: string;
-  repo: string;
-  url: string;
-}
+export type GithubRepositoryIdentity = NonNullable<OriginRemote['github']>;
 
-export interface OriginRemote {
-  name: 'origin';
-  url: string | null;
-  github: GithubRepositoryIdentity | null;
-}
-
-export interface OriginResult {
-  origin: OriginRemote | null;
-  originError: string | null;
-}
+export type OriginResult = Pick<OriginResponse, 'origin' | 'originError'>;
 
 function githubIdentity(
   host: string,

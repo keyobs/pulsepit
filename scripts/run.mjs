@@ -5,7 +5,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const cwd = (app) => path.join(root, 'apps', app);
+const workspaces = {
+  api: path.join(root, 'apps', 'api'),
+  web: path.join(root, 'apps', 'web'),
+  contracts: path.join(root, 'packages', 'contracts'),
+};
+const cwd = (app) => workspaces[app];
 const binary = (app, name) => {
   const file = path.join(cwd(app), 'node_modules', '.bin', name);
   if (!existsSync(file)) {
@@ -42,13 +47,22 @@ async function run(app, name, args) {
 }
 async function development(apps) {
   // Vérifier les exécutables avant de démarrer quoi que ce soit.
-  const specifications = apps.map((app) => ({
-    app,
-    name: app === 'web' ? 'vite' : 'tsx',
-    args: app === 'web' ? ['--host', '127.0.0.1'] : ['watch', 'src/index.ts'],
-  }));
+  const specifications = [
+    {
+      app: 'contracts',
+      name: 'tsc',
+      args: ['-p', 'tsconfig.json', '--watch', '--preserveWatchOutput'],
+    },
+    ...apps.map((app) => ({
+      app,
+      name: app === 'web' ? 'vite' : 'tsx',
+      args: app === 'web' ? ['--host', '127.0.0.1'] : ['watch', 'src/index.ts'],
+    })),
+  ];
   for (const { app, name } of specifications) binary(app, name);
 
+  // Le premier build doit réussir avant que les serveurs importent le package.
+  await run('contracts', 'tsc', ['-p', 'tsconfig.json']);
   const children = specifications.map(({ app, name, args }) =>
     start(app, name, args),
   );
@@ -95,10 +109,12 @@ try {
       await development(['web']);
       break;
     case 'check-types':
+      await run('contracts', 'tsc', ['-p', 'tsconfig.json']);
       await run('api', 'tsc', ['-p', 'tsconfig.json', '--noEmit']);
       await run('web', 'tsc', ['-p', 'tsconfig.json', '--noEmit']);
       break;
     case 'build':
+      await run('contracts', 'tsc', ['-p', 'tsconfig.json']);
       await run('api', 'tsc', ['-p', 'tsconfig.json']);
       await run('web', 'tsc', ['-p', 'tsconfig.json', '--noEmit']);
       await run('web', 'vite', ['build']);
