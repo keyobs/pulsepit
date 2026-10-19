@@ -5,11 +5,15 @@ import { getRepositoriesRoutes } from './get-repositories.routes.js';
 import { postRepositoriesRoutes } from './post-repositories.routes.js';
 
 export const repositoriesRoutes: FastifyPluginAsync<
-  Pick<AppConfig, 'scanPaths'> & { repositoryUrls: RepositoryUrls }
+  Pick<AppConfig, 'scanPaths'> & {
+    repositoryUrls: RepositoryUrls;
+    repositoryHosting: RepositoryUrls;
+  }
 > = async (app, options) => {
   app.register(getRepositoriesRoutes, {
     scanPaths: options.scanPaths,
     repositoryUrls: options.repositoryUrls,
+    repositoryHosting: options.repositoryHosting,
   });
   app.register(postRepositoriesRoutes, {
     scanPaths: options.scanPaths,

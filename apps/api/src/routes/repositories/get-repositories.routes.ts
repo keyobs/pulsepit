@@ -12,7 +12,10 @@ import {
 import type { RepositoryUrls } from '../../services/repository-config.service.js';
 
 export const getRepositoriesRoutes: FastifyPluginAsync<
-  Pick<AppConfig, 'scanPaths'> & { repositoryUrls: RepositoryUrls }
+  Pick<AppConfig, 'scanPaths'> & {
+    repositoryUrls: RepositoryUrls;
+    repositoryHosting: RepositoryUrls;
+  }
 > = async (app, options) => {
   app.get('', async () => {
     const result = await findRepositories(options.scanPaths);
@@ -21,6 +24,7 @@ export const getRepositoriesRoutes: FastifyPluginAsync<
       repositories: result.repositories.map((repository) => ({
         ...repository,
         urls: options.repositoryUrls[repository.path] ?? {},
+        hosting: options.repositoryHosting[repository.path] ?? {},
       })),
     };
   });

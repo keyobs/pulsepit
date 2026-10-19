@@ -7,6 +7,7 @@ import type { RepositoryUrls } from './services/repository-config.service.js';
 export function buildApp(
   config: AppConfig,
   repositoryUrls: RepositoryUrls = {},
+  repositoryHosting: RepositoryUrls = {},
 ) {
   const app = Fastify({ logger: true });
 
@@ -15,6 +16,7 @@ export function buildApp(
     prefix: '/api/repositories',
     scanPaths: config.scanPaths,
     repositoryUrls,
+    repositoryHosting,
   });
 
   return app;
