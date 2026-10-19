@@ -2,15 +2,21 @@
 import { spawn } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+import { loadEnvFile } from 'node:process';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+try {
+  loadEnvFile(path.join(root, '.env'));
+} catch (error) {
+  if (error.code !== 'ENOENT') throw error;
+}
 const projectName = JSON.parse(
   readFileSync(path.join(root, 'package.json'), 'utf8'),
 ).name;
-const apiPort = 3001;
-const webPort = 5173;
+const apiPort = Number(process.env.PORT ?? 3001);
+const webPort = Number(process.env.WEB_PORT ?? 5173);
 const children = [];
 const make = (app, bin, args) => {
   const cwd = path.join(root, 'apps', app);
