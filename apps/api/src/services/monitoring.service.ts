@@ -1,13 +1,6 @@
-export interface DeploymentCheck {
-  environment: string;
-  url: string;
-  status: 'online' | 'offline';
-  statusCode: number | null;
-  responseTimeMs: number;
-  checkedAt: string;
-  errorCode: 'HTTP_ERROR' | 'TIMEOUT' | 'NETWORK_ERROR' | null;
-  error: string | null;
-}
+import type { DeploymentCheck, MonitoringResponse } from '@pulsepit/contracts';
+
+export type { DeploymentCheck } from '@pulsepit/contracts';
 
 async function checkUrl(
   environment: string,
@@ -62,7 +55,7 @@ async function checkUrl(
 export async function checkDeploymentUrls(
   urls: Record<string, string>,
   timeoutMs = 5_000,
-): Promise<{ configured: boolean; checks: DeploymentCheck[] }> {
+): Promise<Omit<MonitoringResponse, 'path'>> {
   const entries = Object.entries(urls).sort(([a], [b]) => a.localeCompare(b));
   const checks: DeploymentCheck[] = new Array(entries.length);
   let next = 0;

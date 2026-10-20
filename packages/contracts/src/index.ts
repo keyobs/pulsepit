@@ -6,6 +6,11 @@ export {
   PushRequest,
   PushResponse,
 } from './git-actions.js';
+export {
+  DeploymentCheck,
+  MonitoringRequest,
+  MonitoringResponse,
+} from './monitoring.js';
 export { OriginRemote, OriginResponse } from './origin.js';
 export {
   OutdatedDependency,

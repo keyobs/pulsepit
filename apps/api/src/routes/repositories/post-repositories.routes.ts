@@ -1,6 +1,8 @@
 import type {
   FetchRequest,
   FetchResponse,
+  MonitoringRequest,
+  MonitoringResponse,
   OutdatedRequest,
   OutdatedResponse,
   PushRequest,
@@ -18,7 +20,7 @@ import type { RepositoryUrls } from '../../services/repository-config.service.js
 export const postRepositoriesRoutes: FastifyPluginAsync<
   Pick<AppConfig, 'scanPaths'> & { repositoryUrls: RepositoryUrls }
 > = async (app, options) => {
-  app.post<{ Body: { path: string } }>(
+  app.post<{ Body: MonitoringRequest }>(
     '/monitoring',
     {
       schema: {
@@ -44,7 +46,7 @@ export const postRepositoriesRoutes: FastifyPluginAsync<
       const result = await checkDeploymentUrls(
         options.repositoryUrls[repository.path] ?? {},
       );
-      return { path: repository.path, ...result };
+      return { path: repository.path, ...result } satisfies MonitoringResponse;
     },
   );
 
