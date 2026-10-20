@@ -49,6 +49,38 @@ export async function findConfiguredRepository(
   }
 }
 
+export async function getRepositoryDetails(
+  repositoryPath: string,
+  scanPaths: string[],
+): Promise<Repository | null> {
+  const repository = await findConfiguredRepository(repositoryPath, scanPaths);
+  return repository === null ? null : inspectRepository(repository);
+}
+
+async function inspectRepository(
+  repository: Pick<Repository, 'name' | 'path'>,
+): Promise<Repository> {
+  const { path } = repository;
+  let git: GitStatus | null = null;
+  let gitError: string | null = null;
+  try {
+    git = await getGitStatus(path);
+  } catch {
+    gitError = 'Unable to read Git status for this repository.';
+  }
+  return {
+    ...repository,
+    git,
+    gitError,
+    sync: git === null ? null : await getGitSync(path, git.branch),
+    developLastCommitAt: await getDevelopLastCommitAt(path),
+    versions: await getPackageVersions(path),
+    ...(await getPackageEngines(path)),
+    packageManager: await detectPackageManager(path),
+    ...(await getOriginRemote(path)),
+  };
+}
+
 function describeScanError(path: string, error: unknown): ScanError {
   const code = (error as NodeJS.ErrnoException).code ?? 'UNKNOWN';
   const messages: Record<string, string> = {
@@ -99,26 +131,9 @@ async function scanDirectory(
       // Git worktrees use a .git file instead of a directory.
       const gitEntry = await lstat(join(repositoryPath, '.git'));
       if (gitEntry.isDirectory() || gitEntry.isFile()) {
-        let git: GitStatus | null = null;
-        let gitError: string | null = null;
-        try {
-          git = await getGitStatus(repositoryPath);
-        } catch {
-          gitError = 'Unable to read Git status for this repository.';
-        }
-        repositories.push({
-          name: entry.name,
-          path: repositoryPath,
-          git,
-          gitError,
-          sync:
-            git === null ? null : await getGitSync(repositoryPath, git.branch),
-          developLastCommitAt: await getDevelopLastCommitAt(repositoryPath),
-          versions: await getPackageVersions(repositoryPath),
-          ...(await getPackageEngines(repositoryPath)),
-          packageManager: await detectPackageManager(repositoryPath),
-          ...(await getOriginRemote(repositoryPath)),
-        });
+        repositories.push(
+          await inspectRepository({ name: entry.name, path: repositoryPath }),
+        );
       }
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {

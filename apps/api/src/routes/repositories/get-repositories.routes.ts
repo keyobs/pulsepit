@@ -1,6 +1,8 @@
 import type {
+  ErrorResponse,
   ListRepositoriesResponse,
   OriginResponse,
+  Repository as RepositoryResponse,
 } from '@pulsepit/contracts';
 import type { FastifyPluginAsync } from 'fastify';
 import type { AppConfig } from '../../config.js';
@@ -13,6 +15,8 @@ import {
 import {
   findConfiguredRepository,
   findRepositories,
+  getRepositoryDetails,
+  type Repository,
 } from '../../services/repositories.service.js';
 import type { RepositoryUrls } from '../../services/repository-config.service.js';
 import { getRepositoryWorkflows } from '../../services/workflows.service.js';
@@ -23,17 +27,46 @@ export const getRepositoriesRoutes: FastifyPluginAsync<
     repositoryHosting: RepositoryUrls;
   }
 > = async (app, options) => {
+  const withDeploymentLinks = (repository: Repository): RepositoryResponse => ({
+    ...repository,
+    urls: options.repositoryUrls[repository.path] ?? {},
+    hosting: options.repositoryHosting[repository.path] ?? {},
+  });
+
   app.get('', async () => {
     const result = await findRepositories(options.scanPaths);
     return {
       ...result,
-      repositories: result.repositories.map((repository) => ({
-        ...repository,
-        urls: options.repositoryUrls[repository.path] ?? {},
-        hosting: options.repositoryHosting[repository.path] ?? {},
-      })),
+      repositories: result.repositories.map(withDeploymentLinks),
     } satisfies ListRepositoriesResponse;
   });
+
+  app.get<{ Querystring: { path: string } }>(
+    '/detail',
+    {
+      schema: {
+        querystring: {
+          type: 'object',
+          required: ['path'],
+          properties: {
+            path: { type: 'string', minLength: 1, pattern: '\\S' },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const repository = await getRepositoryDetails(
+        request.query.path,
+        options.scanPaths,
+      );
+      if (repository === null) {
+        return reply.code(404).send({
+          error: 'Repository not found in configured scan directories.',
+        } satisfies ErrorResponse);
+      }
+      return withDeploymentLinks(repository);
+    },
+  );
 
   app.get<{ Querystring: { path: string } }>(
     '/origin',
