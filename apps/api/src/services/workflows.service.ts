@@ -1,35 +1,36 @@
 import { lstat, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
+import type {
+  ScanError,
+  WorkflowEntry,
+  WorkflowsResponse,
+} from '@pulsepit/contracts';
 import { analyzeGithubWorkflow } from './github-workflow.service.js';
 
-export interface WorkflowFile {
-  provider: 'github-actions' | 'gitlab-ci';
-  file: string;
-}
+export type WorkflowFile = Pick<WorkflowEntry, 'provider' | 'file'>;
 
-export interface WorkflowScanError {
-  path: string;
-  code: string;
-  message: string;
-}
+export type WorkflowScanError = ScanError;
 
 export interface WorkflowDiscovery {
   workflows: WorkflowFile[];
   errors: WorkflowScanError[];
 }
 
-export async function getRepositoryWorkflows(repositoryPath: string) {
+export async function getRepositoryWorkflows(
+  repositoryPath: string,
+): Promise<Omit<WorkflowsResponse, 'path'>> {
   const discovered = await findWorkflowFiles(repositoryPath);
-  const workflows = [];
+  const workflows: WorkflowEntry[] = [];
   // Process files sequentially to bound file buffers and preserve discovery order.
   for (const workflow of discovered.workflows) {
     workflows.push(
       workflow.provider === 'github-actions'
         ? {
             ...workflow,
+            provider: 'github-actions',
             ...(await analyzeGithubWorkflow(repositoryPath, workflow.file)),
           }
-        : workflow,
+        : { ...workflow, provider: 'gitlab-ci' },
     );
   }
   return { workflows, errors: discovered.errors };

@@ -27,3 +27,12 @@ export {
   RepositorySync,
   ScanError,
 } from './repositories.js';
+export {
+  DeploymentEvidence,
+  GithubEnvironment,
+  GithubWorkflowAnalysis,
+  GithubWorkflowAnalysisError,
+  GithubWorkflowResult,
+  WorkflowEntry,
+  WorkflowsResponse,
+} from './workflows.js';

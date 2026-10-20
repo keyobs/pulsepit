@@ -4,6 +4,7 @@ import type {
   ListRepositoriesResponse,
   OriginResponse,
   Repository as RepositoryResponse,
+  WorkflowsResponse,
 } from '@pulsepit/contracts';
 import type { FastifyPluginAsync } from 'fastify';
 import type { AppConfig } from '../../config.js';
@@ -125,7 +126,7 @@ export const getRepositoriesRoutes: FastifyPluginAsync<
       return {
         path: repository.path,
         ...(await getRepositoryWorkflows(repository.path)),
-      };
+      } satisfies WorkflowsResponse;
     },
   );
 

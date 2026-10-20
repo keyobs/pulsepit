@@ -1,34 +1,20 @@
 import { constants } from 'node:fs';
 import { open } from 'node:fs/promises';
 import { join } from 'node:path';
+import type {
+  GithubWorkflowAnalysis,
+  GithubWorkflowResult,
+} from '@pulsepit/contracts';
 import { parseDocument } from 'yaml';
 import {
-  type GithubDeploymentAnalysis,
   InvalidDeploymentMetadata,
   inspectGithubDeployments,
 } from './github-deployment.service.js';
 
-export interface GithubWorkflowAnalysis extends GithubDeploymentAnalysis {
-  name: string;
-  on: string[];
-  branches: string[];
-  branchFilters: Record<string, { include: string[]; exclude: string[] }>;
-  jobs: string[];
-}
-
-export type GithubWorkflowResult =
-  | { analysis: GithubWorkflowAnalysis; analysisError: null }
-  | {
-      analysis: null;
-      analysisError: {
-        code:
-          | 'INVALID_YAML'
-          | 'INVALID_WORKFLOW'
-          | 'FILE_TOO_LARGE'
-          | 'READ_FAILED';
-        message: string;
-      };
-    };
+export type {
+  GithubWorkflowAnalysis,
+  GithubWorkflowResult,
+} from '@pulsepit/contracts';
 
 class InvalidWorkflow extends Error {}
 

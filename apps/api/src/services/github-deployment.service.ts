@@ -1,31 +1,18 @@
-export interface GithubEnvironment {
-  job: string;
-  name: string;
-  isDynamic: boolean;
-  url: string | null;
-  urlExpression: string | null;
-}
+import type {
+  DeploymentEvidence,
+  GithubEnvironment,
+  GithubWorkflowAnalysis,
+} from '@pulsepit/contracts';
 
-export interface DeploymentEvidence {
-  job: string;
-  source:
-    | 'environment'
-    | 'job_name'
-    | 'step_name'
-    | 'action'
-    | 'command'
-    | 'reusable_workflow';
-  confidence: 'declared' | 'heuristic' | 'unknown';
-  message: string;
-}
+export type {
+  DeploymentEvidence,
+  GithubEnvironment,
+} from '@pulsepit/contracts';
 
-export interface GithubDeploymentAnalysis {
-  environments: GithubEnvironment[];
-  deployment: {
-    status: 'environment_declared' | 'suspected' | 'unknown' | 'not_detected';
-    evidence: DeploymentEvidence[];
-  };
-}
+export type GithubDeploymentAnalysis = Pick<
+  GithubWorkflowAnalysis,
+  'environments' | 'deployment'
+>;
 
 export class InvalidDeploymentMetadata extends Error {}
 
