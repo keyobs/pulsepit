@@ -166,7 +166,7 @@ export const postRepositoriesRoutes: FastifyPluginAsync<
             : result.code === 'TIMEOUT'
               ? 504
               : 502;
-        return reply.code(status).send(result);
+        return reply.code(status).send({ path: repository.path, ...result });
       }
       return { path: repository.path, ...result } satisfies OutdatedResponse;
     },
