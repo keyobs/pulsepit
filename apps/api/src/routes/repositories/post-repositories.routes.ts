@@ -1,3 +1,9 @@
+import type {
+  FetchRequest,
+  FetchResponse,
+  PushRequest,
+  PushResponse,
+} from '@pulsepit/contracts';
 import type { FastifyPluginAsync } from 'fastify';
 import type { AppConfig } from '../../config.js';
 import { fetchRepository } from '../../services/git.service.js';
@@ -40,7 +46,7 @@ export const postRepositoriesRoutes: FastifyPluginAsync<
     },
   );
 
-  app.post<{ Body: { path: string; branch: string } }>(
+  app.post<{ Body: PushRequest }>(
     '/push',
     {
       schema: {
@@ -84,11 +90,16 @@ export const postRepositoriesRoutes: FastifyPluginAsync<
           .code(status)
           .send({ path: repository.path, branch, ...result });
       }
-      return { path: repository.path, branch, remote: 'origin', success: true };
+      return {
+        path: repository.path,
+        branch,
+        remote: 'origin',
+        success: true,
+      } satisfies PushResponse;
     },
   );
 
-  app.post<{ Body: { path: string } }>(
+  app.post<{ Body: FetchRequest }>(
     '/fetch',
     {
       schema: {
@@ -117,7 +128,7 @@ export const postRepositoriesRoutes: FastifyPluginAsync<
           .code(result.code === 'TIMEOUT' ? 504 : 502)
           .send({ path: repository.path, ...result });
       }
-      return { path: repository.path, success: true };
+      return { path: repository.path, success: true } satisfies FetchResponse;
     },
   );
 

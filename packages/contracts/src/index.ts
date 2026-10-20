@@ -1,4 +1,10 @@
 export { ErrorResponse } from './errors.js';
+export {
+  FetchRequest,
+  FetchResponse,
+  PushRequest,
+  PushResponse,
+} from './git-actions.js';
 export { OriginRemote, OriginResponse } from './origin.js';
 export {
   GitStatus,
