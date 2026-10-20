@@ -17,6 +17,7 @@ export {
   OutdatedRequest,
   OutdatedResponse,
 } from './outdated.js';
+export { PackageResponse } from './package.js';
 export {
   GitStatus,
   ListRepositoriesResponse,

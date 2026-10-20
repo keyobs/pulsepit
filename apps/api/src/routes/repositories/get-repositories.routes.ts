@@ -3,6 +3,7 @@ import type {
   ErrorResponse,
   ListRepositoriesResponse,
   OriginResponse,
+  PackageResponse,
   Repository as RepositoryResponse,
   WorkflowsResponse,
 } from '@pulsepit/contracts';
@@ -194,7 +195,11 @@ export const getRepositoriesRoutes: FastifyPluginAsync<
       if (result.manifest === null) {
         return reply.code(422).send({ error: result.error });
       }
-      return { path: repository.path, ref, manifest: result.manifest };
+      return {
+        path: repository.path,
+        ref,
+        manifest: result.manifest,
+      } satisfies PackageResponse;
     },
   );
 };

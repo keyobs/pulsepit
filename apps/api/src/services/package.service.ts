@@ -1,6 +1,10 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { PackageVersion, PackageVersions } from '@pulsepit/contracts';
+import type {
+  PackageResponse,
+  PackageVersion,
+  PackageVersions,
+} from '@pulsepit/contracts';
 import { simpleGit } from 'simple-git';
 
 export type { PackageVersion, PackageVersions } from '@pulsepit/contracts';
@@ -57,7 +61,7 @@ export async function getPackageEngines(
   return { engines: engines as Record<string, string>, enginesError: null };
 }
 
-export type PackageRef = keyof PackageVersions;
+export type PackageRef = PackageResponse['ref'];
 
 const refs: Record<PackageRef, string> = {
   head: 'HEAD',
@@ -66,7 +70,7 @@ const refs: Record<PackageRef, string> = {
 };
 
 export type PackageManifestResult =
-  | { manifest: Record<string, unknown>; error: null }
+  | { manifest: PackageResponse['manifest']; error: null }
   | { manifest: null; error: string };
 
 export async function getPackageManifest(
@@ -100,7 +104,7 @@ export async function getPackageManifest(
         error: `package.json must contain a JSON object at ${ref}.`,
       };
     }
-    return { manifest: manifest as Record<string, unknown>, error: null };
+    return { manifest: manifest as PackageResponse['manifest'], error: null };
   } catch {
     return { manifest: null, error: `Invalid package.json JSON at ${ref}.` };
   }
