@@ -1,4 +1,5 @@
 import type {
+  BranchesResponse,
   ErrorResponse,
   ListRepositoriesResponse,
   OriginResponse,
@@ -155,7 +156,10 @@ export const getRepositoriesRoutes: FastifyPluginAsync<
       if (result.error !== null) {
         return reply.code(result.code === 'TIMEOUT' ? 504 : 502).send(result);
       }
-      return { path: repository.path, branches: result.branches };
+      return {
+        path: repository.path,
+        branches: result.branches,
+      } satisfies BranchesResponse;
     },
   );
 

@@ -1,3 +1,4 @@
+export { BranchesResponse, LocalBranch } from './branches.js';
 export { ErrorResponse } from './errors.js';
 export {
   FetchRequest,

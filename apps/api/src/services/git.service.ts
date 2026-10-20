@@ -1,16 +1,11 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import type { GitStatus } from '@pulsepit/contracts';
+import type { GitStatus, LocalBranch } from '@pulsepit/contracts';
 import { simpleGit } from 'simple-git';
 
-export type { GitStatus } from '@pulsepit/contracts';
+export type { GitStatus, LocalBranch } from '@pulsepit/contracts';
 
 const execute = promisify(execFile);
-
-export interface LocalBranch {
-  name: string;
-  isCurrent: boolean;
-}
 
 export type LocalBranchesResult =
   | { branches: LocalBranch[]; error: null }
