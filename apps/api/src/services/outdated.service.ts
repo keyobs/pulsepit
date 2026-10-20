@@ -1,25 +1,15 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import type { OutdatedDependency, OutdatedResponse } from '@pulsepit/contracts';
 import { detectPackageManager } from './package-manager.service.js';
 import { getYarnOutdatedDependencies } from './yarn-outdated.service.js';
 
 const execute = promisify(execFile);
 
-export interface OutdatedDependency {
-  name: string;
-  current: string | null;
-  wanted: string;
-  latest: string;
-  dependent: string | null;
-  location: string | null;
-}
+export type { OutdatedDependency } from '@pulsepit/contracts';
 
 export type OutdatedResult =
-  | {
-      packageManager: 'npm' | 'pnpm' | 'yarn';
-      dependencies: OutdatedDependency[];
-      error: null;
-    }
+  | Omit<OutdatedResponse, 'path'>
   | {
       code: 'PACKAGE_MANAGER' | 'TIMEOUT' | 'COMMAND_FAILED' | 'INVALID_OUTPUT';
       error: string;

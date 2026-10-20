@@ -8,6 +8,11 @@ export {
 } from './git-actions.js';
 export { OriginRemote, OriginResponse } from './origin.js';
 export {
+  OutdatedDependency,
+  OutdatedRequest,
+  OutdatedResponse,
+} from './outdated.js';
+export {
   GitStatus,
   ListRepositoriesResponse,
   PackageManagerDetection,

@@ -1,6 +1,8 @@
 import type {
   FetchRequest,
   FetchResponse,
+  OutdatedRequest,
+  OutdatedResponse,
   PushRequest,
   PushResponse,
 } from '@pulsepit/contracts';
@@ -132,7 +134,7 @@ export const postRepositoriesRoutes: FastifyPluginAsync<
     },
   );
 
-  app.post<{ Body: { path: string } }>(
+  app.post<{ Body: OutdatedRequest }>(
     '/outdated',
     {
       schema: {
@@ -166,7 +168,7 @@ export const postRepositoriesRoutes: FastifyPluginAsync<
               : 502;
         return reply.code(status).send(result);
       }
-      return { path: repository.path, ...result };
+      return { path: repository.path, ...result } satisfies OutdatedResponse;
     },
   );
 };
