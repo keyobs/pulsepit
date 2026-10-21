@@ -1,0 +1,49 @@
+name: Publish beacon to GitHub Packages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-beacon
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'keyobs/pulsepit' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    defaults:
+      run:
+        working-directory: packages/beacon
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js and GitHub Packages
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          registry-url: https://npm.pkg.github.com
+          scope: '@keyobs'
+          package-manager-cache: false
+
+      - name: Install beacon build dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Build and test beacon only
+        run: npm test
+
+      - name: Pack the verified build
+        run: npm pack --ignore-scripts --pack-destination "$RUNNER_TEMP"
+
+      - name: Publish verified archive
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          npm publish "$RUNNER_TEMP/keyobs-pulsepit-beacon-$VERSION.tgz" --ignore-scripts --registry=https://npm.pkg.github.com

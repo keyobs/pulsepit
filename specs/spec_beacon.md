@@ -86,7 +86,7 @@ Générer ce fichier pendant le build peut fournir version et commit, mais pas l
 
 ## 4. Package npm
 
-Nom envisagé : `@pulsepit/beacon`. Son nom et son scope devront être vérifiés avant publication.
+Nom retenu pour la publication : `@keyobs/pulsepit-beacon`, sous le propriétaire GitHub du dépôt `keyobs/pulsepit`. Le package reste dans `packages/beacon` ; aucun dépôt dédié n’est nécessaire. La publication distante n’a pas encore été effectuée.
 
 Le code serait développé dans `packages/beacon`. Créer un package dans le monorepo ne le publie pas : les premiers essais peuvent utiliser une archive produite avec `npm pack` ou l'outil équivalent du projet consommateur.
 
@@ -283,3 +283,96 @@ Pas d'accès à une production réelle, de publication npm ou de suite complète
 6. Convenir de la route backend avec le front, puis implémenter sa consultation.
 7. Valider les informations affichées sur un environnement choisi par l'utilisateur.
 8. Préparer et autoriser séparément la publication npm.
+
+## 15. Avancement du package et moment d'intégration — 2026-10-21
+
+La configuration des cartes de déploiement, les contrats partagés et le ping ciblé sont implémentés côté Pulsepit. Ils fonctionnent sans balise.
+
+Le cœur du package `@keyobs/pulsepit-beacon` est créé dans `packages/beacon`. Son API `createBeaconManifest` construit le document commun `protocolVersion` et `app` à partir de métadonnées explicitement fournies. Le package n'a aucune dépendance d'exécution et ne lit ni Git, ni fichier, ni environnement du processus. Les SHA complets sont validés, les dates UTC sont normalisées et les valeurs inconnues restent `null`.
+
+Ce cœur ne crée pas encore de fichier, de route ou de check de santé. Son format commun peut alimenter le futur générateur statique ou être intégré dans la réponse d'un adaptateur serveur. Il ne fournit pas automatiquement une date de déploiement.
+
+Ordre concret pour la suite :
+
+1. Choisir une application cible et son mode d'intégration.
+2. Développer le générateur statique ou l'adaptateur serveur correspondant.
+3. Ajouter le package à cette application depuis une archive locale et fournir ses métadonnées au build ou à la livraison. Pour un générateur statique, l'installation peut se limiter aux dépendances de développement ; pour un adaptateur serveur, elle est nécessaire à l'exécution.
+4. Définir puis raccorder la lecture de cette source par le backend Pulsepit, dans le respect du contrat avec le front.
+5. Vérifier la réponse de l'application déployée avant d'envisager la publication npm.
+
+**Vérification du cœur :** quatre nouveaux tests réussis ; compilation TypeScript et contrôle Biome du package réussis. Une archive contenant uniquement `package.json`, le JavaScript compilé et ses déclarations a été installée hors ligne dans une application temporaire extérieure au workspace. L'import ESM et la construction du manifeste y fonctionnent sans les autres packages Pulsepit. Aucun test existant relancé, aucun appel à une application réelle, aucune publication npm.
+
+À cette étape de validation initiale, le manifeste du package était privé. La préparation de publication au § 17 retire cette restriction locale ; la visibilité du package sur GitHub reste à gérer dans GitHub Packages après sa création.
+
+## 16. Première intégration statique : izeetok
+
+Application choisie par l'utilisateur : `/home/keyobs/apollo/izeetok`, SPA React/Vite. La branche `develop` est publiée sur GitHub Pages (Test) et `main` sur Vercel (Production).
+
+Le package expose maintenant `@keyobs/pulsepit-beacon/static` et sa fonction `writeBeaconManifest(outputPath, options)`. Elle valide les métadonnées avant d'écrire le JSON et ne devine aucune valeur depuis le système. Deux nouveaux tests vérifient la génération, le remplacement du fichier et l'absence d'écrasement en cas de métadonnées invalides ; ils sont réussis.
+
+Dans la branche locale `feat/pulsepit-beacon` d'izeetok, une archive est ajoutée comme dépendance de développement. Le script `scripts/generateBeacon.mjs` est exécuté après le build Vite et génère `dist/pulsepit-deployment.json`. Il fournit le nom/version de l'application, le contexte d'environnement et le commit construit. GitHub Pages reçoit explicitement `staging` dans le workflow ; Vercel fournit son propre contexte de build. Sans plateforme, l'environnement du document local est `development`.
+
+Le document ne contient aucun token. La date `deployedAt` reste `null` car la génération précède la mise en ligne. Les sources de date issues des plateformes de déploiement seront traitées séparément.
+
+L'installation locale et le build Pages sont vérifiés. Le fichier est accessible sous `/izeetok/pulsepit-deployment.json` dans une preview locale, avec un contenu JSON valide. Les métadonnées de Production sont vérifiées avec un contexte Vercel simulé, sans déploiement réel.
+
+À faire : convenir puis implémenter la configuration de lecture par Pulsepit et le collecteur statique ; récupérer les dates de déploiement depuis des sources fiables. Aucun push, déploiement ou publication npm n'a été effectué.
+
+
+## 17. Publication depuis le monorepo vers GitHub Packages
+
+Décision utilisateur : conserver le package dans ce dépôt et le distribuer par un registre. L'archive locale installée dans izeetok est une validation technique temporaire, pas le mode de distribution définitif.
+
+### Identité et contenu
+
+* Nom : `@keyobs/pulsepit-beacon`, version initiale `0.1.0`.
+* Dépôt associé : `https://github.com/keyobs/pulsepit`, sous-dossier `packages/beacon`.
+* Registre de publication : `https://npm.pkg.github.com`, déclaré dans `publishConfig`.
+* Exports : `@keyobs/pulsepit-beacon` et `@keyobs/pulsepit-beacon/static`.
+* Fichiers distribués : JavaScript compilé, déclarations TypeScript et générateur statique. Aucun code d'application, test, secret ou configuration locale n'est empaqueté.
+* Aucune dépendance d'exécution ou dépendance privée au workspace.
+
+`private: false` autorise la publication npm du package ; ce champ ne définit pas sa visibilité sur GitHub Packages. Les applications et contrats privés du monorepo ne sont pas publiés par ce workflow.
+
+### Workflow et reproductibilité
+
+Fichier : `.github/workflows/publish-beacon.yml`.
+
+Le workflow est déclenché manuellement depuis GitHub Actions, sur `main` de `keyobs/pulsepit`. Il installe uniquement les dépendances de build de `packages/beacon`, avec son `package-lock.json` autonome et `npm ci --ignore-scripts`. Il n'installe ni le front ni le backend Pulsepit. Le monorepo conserve ses commandes pnpm habituelles.
+
+Il compile puis exécute les tests du package beacon uniquement, construit une archive de ce build et publie cette même archive. Aucun événement push ou release ne déclenche automatiquement une publication dans cette première configuration. Le job dispose de `contents: read` et `packages: write` ; le jeton automatique `GITHUB_TOKEN` est fourni à la seule étape de publication via `NODE_AUTH_TOKEN`.
+
+La version vient de `packages/beacon/package.json`. Une nouvelle livraison du package nécessite d'incrémenter cette version ; une version publiée ne doit pas être réutilisée pour un contenu différent. Le hook `prepack` compile le package lors d'un empaquetage local normal ; le workflow utilise `--ignore-scripts` pour empaqueter le build déjà vérifié.
+
+### Première publication puis installation dans izeetok
+
+1. Relire, committer puis pousser les fichiers du package et le workflow dans le dépôt Pulsepit, selon les étapes autorisées par l'utilisateur.
+2. Une fois le workflow présent sur `main`, ouvrir Actions → « Publish beacon to GitHub Packages » → Run workflow sur `main`.
+3. Vérifier que `@keyobs/pulsepit-beacon@0.1.0` est disponible dans GitHub Packages et accorder au dépôt `keyobs/izeetok` l'accès Actions en lecture au package.
+4. Vérifier l'accès de lecture de Vercel au package avec son token serveur. Aucun token n'est committé.
+5. Remplacer dans izeetok la dépendance `file:vendor/...` par la version publiée, actualiser le lockfile avec pnpm et remplacer l'import du script par `@keyobs/pulsepit-beacon/static`.
+6. Retirer l'archive temporaire lorsque le registre est effectivement utilisable, puis vérifier l'installation avec le lockfile figé et le build.
+
+Configuration de registre côté consommateur, sans secret :
+
+```ini
+@keyobs:registry=https://npm.pkg.github.com
+```
+
+L'authentification est fournie séparément par la CI. GitHub Actions utilise `GITHUB_TOKEN` avec `packages: read` et l'accès du dépôt consommateur au package. Vercel utilise un identifiant de lecture approprié ; son mécanisme actuel `NODE_AUTH_TOKEN` pour GitHub Packages est à vérifier pour ce package précis. Le nom du scope change : l'ancienne archive de validation `@pulsepit/beacon` n'est pas la publication finale.
+
+Commande d'installation après disponibilité de la version :
+
+```sh
+pnpm add -D @keyobs/pulsepit-beacon@0.1.0
+```
+
+La dépendance reste de développement pour le générateur statique, qui n'est exécuté qu'au build.
+
+### Vérifications de cette tranche
+
+Installation autonome par `npm ci` et compilation réussies. Uniquement les deux nouveaux tests de `packages/beacon/tests/publication.test.mjs` sont exécutés localement : identité du package et indépendance du workspace ; inspection de l'archive, installation hors ligne dans un consommateur extérieur et exécution des deux exports. Ils sont réussis. Les six tests des étapes précédentes n'ont pas été relancés pendant cette intervention ; le workflow de publication exécutera les tests du seul package avant publication.
+
+Le YAML est parsé et le déclenchement manuel, le répertoire de travail et les permissions de publication sont vérifiés. Le workflow distant et les droits réels du registre ne sont pas encore vérifiés par une publication. Aucun push, déclenchement distant ou publication n'a été effectué.
+
+Sources techniques : [publication Node.js depuis GitHub Actions](https://docs.github.com/en/actions/tutorials/publish-packages/publish-nodejs-packages), [registre npm GitHub Packages et accès entre dépôts](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry), [dépendances privées sur Vercel](https://vercel.com/kb/guide/using-private-dependencies-with-vercel).
