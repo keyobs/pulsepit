@@ -2,6 +2,7 @@
 export type {
   BranchesResponse,
   DeploymentCheck,
+  DeploymentCommitComparison,
   DeploymentEnvironment,
   DeploymentEnvironmentConfig,
   DeploymentsResponse,

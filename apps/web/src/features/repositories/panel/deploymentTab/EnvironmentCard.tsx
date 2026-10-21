@@ -12,7 +12,9 @@ import { LinkRow } from '@components/linkRow/LinkRow';
 import { StatusDot } from '@components/statusDot/StatusDot';
 import { DEPLOYMENT_METADATA_ERROR_MESSAGES } from '@constants/deploymentMetadataErrors';
 import { useLinkFeedback } from '@hooks/useLinkFeedback';
+import { describeComparison } from '@utils/describeComparison';
 import { formatDateTime } from '@utils/formatDate';
+import { BeaconIndicator } from '../../beacon/BeaconIndicator';
 import { useRepositoryRuntime } from '../../hooks/useRepositoryRuntime';
 import './environmentCard.less';
 
@@ -64,7 +66,12 @@ export const EnvironmentCard = ({
 
   return (
     <Card
-      title={<span className="pp-environment-card-name">{label}</span>}
+      title={
+        <span className="pp-environment-card-name">
+          {label}
+          <BeaconIndicator beacon={repository.beacon} showWhenAbsent />
+        </span>
+      }
       tone={check?.status === 'offline' ? 'alert' : 'default'}
       actions={
         <>
@@ -133,6 +140,20 @@ export const EnvironmentCard = ({
           <span className="pp-environment-card-none">Inconnu</span>
         )}
       </LabeledCell>
+      {metadata && (
+        <LabeledCell label="Écart avec la branche">
+          <span
+            title="Références locales, éventuellement périmées jusqu'au prochain fetch"
+            className={
+              metadata.comparison.status === 'unknown'
+                ? 'pp-environment-card-none'
+                : undefined
+            }
+          >
+            {describeComparison(metadata.comparison)}
+          </span>
+        </LabeledCell>
+      )}
       <LabeledCell label="Déployé le">
         {metadata?.deployedAt ? (
           <span
