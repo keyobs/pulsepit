@@ -364,7 +364,7 @@ L'authentification est fournie séparément par la CI. GitHub Actions utilise `G
 Commande d'installation après disponibilité de la version :
 
 ```sh
-pnpm add -D @keyobs/pulsepit-beacon@0.1.0
+pnpm add -D @keyobs/pulsepit-beacon@0.1.1
 ```
 
 La dépendance reste de développement pour le générateur statique, qui n'est exécuté qu'au build.
@@ -376,3 +376,14 @@ Installation autonome par `npm ci` et compilation réussies. Uniquement les deux
 Le YAML est parsé et le déclenchement manuel, le répertoire de travail et les permissions de publication sont vérifiés. Le workflow distant et les droits réels du registre ne sont pas encore vérifiés par une publication. Aucun push, déclenchement distant ou publication n'a été effectué.
 
 Sources techniques : [publication Node.js depuis GitHub Actions](https://docs.github.com/en/actions/tutorials/publish-packages/publish-nodejs-packages), [registre npm GitHub Packages et accès entre dépôts](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry), [dépendances privées sur Vercel](https://vercel.com/kb/guide/using-private-dependencies-with-vercel).
+
+
+## 18. README du package et identifiants Vercel
+
+Correction demandée par l'utilisateur : le package possède son propre `packages/beacon/README.md`, inclus explicitement dans les fichiers publiés. Le README de l'application à la racine du monorepo n'est pas modifié. Le README dédié présente l'installation, les deux exports, la génération statique, les limites de la date de déploiement et l'authentification des consommateurs.
+
+La version préparée est `0.1.1`, synchronisée dans le manifeste et son lockfile. Une publication déjà effectuée en `0.1.0` n'est pas écrasée : le workflow publiera une nouvelle version incluant la documentation dédiée.
+
+Pour Vercel, prévoir un token GitHub personnel classique avec `read:packages`, appartenant à un compte ayant accès au package. Il est fourni au projet Vercel via `NODE_AUTH_TOKEN`, pour les environnements qui installent la dépendance. Le token de lecture déjà utilisé par izeetok peut convenir s'il a accès au nouveau package. Le `GITHUB_TOKEN` automatique de publication reste propre à GitHub Actions et ne fournit pas d'identifiant au build Vercel.
+
+Vérification : uniquement le nouveau test `packages/beacon/tests/readme.test.mjs`, réussi. Il empaquette le package, extrait le README de l'archive et vérifie son contenu exact ainsi que la cohérence des versions du manifeste et du lockfile. L'attente d'archive du test de publication existant est adaptée au README ajouté, sans relancer ce test. Aucun ancien test exécuté ; aucune publication effectuée dans cette tranche.

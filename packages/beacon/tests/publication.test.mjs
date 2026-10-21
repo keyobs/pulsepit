@@ -42,6 +42,7 @@ test('published archive installs offline outside the monorepo and exposes both e
   const [archive] = JSON.parse(stdout);
   assert.equal(archive.name, '@keyobs/pulsepit-beacon');
   assert.deepEqual(archive.files.map((file) => file.path).sort(), [
+    'README.md',
     'dist/index.d.ts',
     'dist/index.js',
     'package.json',

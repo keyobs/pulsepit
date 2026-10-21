@@ -1,6 +1,6 @@
 {
   "name": "@keyobs/pulsepit-beacon",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": false,
   "type": "module",
   "sideEffects": false,
@@ -28,7 +28,8 @@
   },
   "files": [
     "dist",
-    "static"
+    "static",
+    "README.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
