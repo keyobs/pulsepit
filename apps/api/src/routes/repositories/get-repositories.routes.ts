@@ -21,19 +21,30 @@ import {
   getRepositoryDetails,
   type Repository,
 } from '../../services/repositories.service.js';
-import type { RepositoryUrls } from '../../services/repository-config.service.js';
+import {
+  getDeploymentEnvironments,
+  type RepositoryEnvironments,
+  type RepositoryUrls,
+} from '../../services/repository-config.service.js';
 import { getRepositoryWorkflows } from '../../services/workflows.service.js';
 
 export const getRepositoriesRoutes: FastifyPluginAsync<
   Pick<AppConfig, 'scanPaths'> & {
     repositoryUrls: RepositoryUrls;
     repositoryHosting: RepositoryUrls;
+    repositoryEnvironments: RepositoryEnvironments;
   }
 > = async (app, options) => {
   const withDeploymentLinks = (repository: Repository): RepositoryResponse => ({
     ...repository,
     urls: options.repositoryUrls[repository.path] ?? {},
     hosting: options.repositoryHosting[repository.path] ?? {},
+    deploymentEnvironments: getDeploymentEnvironments(
+      repository.path,
+      options.repositoryEnvironments,
+      options.repositoryUrls,
+      options.repositoryHosting,
+    ),
   });
 
   app.get('', async () => {

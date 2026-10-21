@@ -1,6 +1,9 @@
 import { z } from 'zod';
 
-export const MonitoringRequest = z.object({ path: z.string().min(1) });
+export const MonitoringRequest = z.object({
+  path: z.string().min(1),
+  environment: z.string().min(1).optional(),
+});
 
 export type MonitoringRequest = z.infer<typeof MonitoringRequest>;
 

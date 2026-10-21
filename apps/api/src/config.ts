@@ -5,6 +5,7 @@ export interface AppConfig {
   port: number;
   scanPaths: string[];
   configPath?: string;
+  githubToken?: string;
 }
 
 export function readConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
@@ -55,6 +56,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 
   return {
     port,
+    githubToken: env.GITHUB_TOKEN?.trim() || undefined,
     scanPaths: [...new Set(directories.map((path) => resolve(path)))],
     configPath: resolve(
       env.CONFIG_PATH ??

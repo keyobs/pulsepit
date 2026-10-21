@@ -1,4 +1,5 @@
 import type {
+  ErrorResponse,
   FetchRequest,
   FetchResponse,
   MonitoringRequest,
@@ -29,6 +30,7 @@ export const postRepositoriesRoutes: FastifyPluginAsync<
           required: ['path'],
           properties: {
             path: { type: 'string', minLength: 1, pattern: '\\S' },
+            environment: { type: 'string', minLength: 1, pattern: '\\S' },
           },
         },
       },
@@ -43,9 +45,19 @@ export const postRepositoriesRoutes: FastifyPluginAsync<
           error: 'Repository not found in configured scan directories.',
         });
       }
-      const result = await checkDeploymentUrls(
-        options.repositoryUrls[repository.path] ?? {},
-      );
+      const urls = options.repositoryUrls[repository.path] ?? {};
+      const { environment } = request.body;
+      if (environment !== undefined && !Object.hasOwn(urls, environment)) {
+        return reply.code(404).send({
+          code: 'ENVIRONMENT_NOT_FOUND',
+          error: 'No application URL is configured for this environment.',
+        } satisfies ErrorResponse);
+      }
+      const selected =
+        environment === undefined
+          ? urls
+          : Object.fromEntries([[environment, urls[environment]]]);
+      const result = await checkDeploymentUrls(selected);
       return { path: repository.path, ...result } satisfies MonitoringResponse;
     },
   );

@@ -1,5 +1,5 @@
 import { lstat, readdir } from 'node:fs/promises';
-import { basename, dirname, join, resolve } from 'node:path';
+import { basename, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import type {
   GitStatus,
   Repository as RepositoryContract,
@@ -13,7 +13,10 @@ import { getPackageEngines, getPackageVersions } from './package.service.js';
 import { detectPackageManager } from './package-manager.service.js';
 
 // Deployment links are added by the route after scanning local repositories.
-export type Repository = Omit<RepositoryContract, 'urls' | 'hosting'>;
+export type Repository = Omit<
+  RepositoryContract,
+  'urls' | 'hosting' | 'deploymentEnvironments'
+>;
 
 export type { ScanError } from '@pulsepit/contracts';
 
@@ -23,30 +26,55 @@ export interface ScanResult {
   scanErrors: ScanError[];
 }
 
+const excludedDirectories = new Set(['.git', 'node_modules']);
+
+async function hasGitMarker(path: string): Promise<boolean> {
+  try {
+    const marker = await lstat(join(path, '.git'));
+    return marker.isDirectory() || marker.isFile();
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false;
+    throw error;
+  }
+}
+
 export async function findConfiguredRepository(
   repositoryPath: string,
   scanPaths: string[],
 ): Promise<Pick<Repository, 'name' | 'path'> | null> {
   const path = resolve(repositoryPath);
-  if (
-    !scanPaths.some((scanPath) => {
-      const parent = resolve(scanPath);
-      return path !== parent && dirname(path) === parent;
-    })
-  ) {
-    return null;
+  for (const scanPath of scanPaths) {
+    const root = resolve(scanPath);
+    const child = relative(root, path);
+    if (
+      !child ||
+      isAbsolute(child) ||
+      child === '..' ||
+      child.startsWith(`..${sep}`)
+    )
+      continue;
+    const parts = child.split(sep);
+    if (parts.some((part) => excludedDirectories.has(part))) continue;
+    try {
+      let current = root;
+      for (let index = 0; index < parts.length; index++) {
+        current = join(current, parts[index]);
+        // Check every component: lstat of the leaf alone follows ancestor links.
+        if (!(await lstat(current)).isDirectory()) {
+          break;
+        }
+        const isRepository = await hasGitMarker(current);
+        if (index === parts.length - 1) {
+          if (isRepository) return { name: basename(path), path };
+        } else if (isRepository) {
+          break;
+        }
+      }
+    } catch {
+      // Another configured root may independently make this path admissible.
+    }
   }
-
-  try {
-    // Match the scan: direct directories only, without following symlinks.
-    const directory = await lstat(path);
-    if (!directory.isDirectory()) return null;
-    const gitEntry = await lstat(join(path, '.git'));
-    if (!gitEntry.isDirectory() && !gitEntry.isFile()) return null;
-    return { name: basename(path), path };
-  } catch {
-    return null;
-  }
+  return null;
 }
 
 export async function getRepositoryDetails(
@@ -99,10 +127,19 @@ export async function findRepositories(
   const uniquePaths = [...new Set(paths.map((path) => resolve(path)))];
   const repositories: Repository[] = [];
   const scanErrors: ScanError[] = [];
+  const visitedDirectories = new Set<string>();
+  const seenRepositories = new Set<string>();
 
   for (const path of uniquePaths) {
     try {
-      repositories.push(...(await scanDirectory(path, scanErrors)));
+      repositories.push(
+        ...(await scanDirectory(
+          path,
+          scanErrors,
+          visitedDirectories,
+          seenRepositories,
+        )),
+      );
     } catch (error) {
       scanErrors.push(describeScanError(path, error));
     }
@@ -118,27 +155,39 @@ export async function findRepositories(
 async function scanDirectory(
   scanPath: string,
   scanErrors: ScanError[],
+  visitedDirectories: Set<string>,
+  seenRepositories: Set<string>,
 ): Promise<Repository[]> {
-  const entries = await readdir(scanPath, { withFileTypes: true });
   const repositories: Repository[] = [];
-
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
-
-    const repositoryPath = join(scanPath, entry.name);
-
+  const pending = [scanPath];
+  while (pending.length > 0) {
+    const directory = pending.pop() as string;
+    if (visitedDirectories.has(directory)) continue;
+    visitedDirectories.add(directory);
     try {
-      // Git worktrees use a .git file instead of a directory.
-      const gitEntry = await lstat(join(repositoryPath, '.git'));
-      if (gitEntry.isDirectory() || gitEntry.isFile()) {
-        repositories.push(
-          await inspectRepository({ name: entry.name, path: repositoryPath }),
-        );
+      const entries = await readdir(directory, { withFileTypes: true });
+      for (const entry of entries) {
+        if (!entry.isDirectory() || excludedDirectories.has(entry.name))
+          continue;
+        const path = join(directory, entry.name);
+        try {
+          if (!(await lstat(path)).isDirectory()) continue;
+          if (await hasGitMarker(path)) {
+            if (!seenRepositories.has(path)) {
+              seenRepositories.add(path);
+              repositories.push(
+                await inspectRepository({ name: entry.name, path }),
+              );
+            }
+          } else {
+            pending.push(path);
+          }
+        } catch (error) {
+          scanErrors.push(describeScanError(path, error));
+        }
       }
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        scanErrors.push(describeScanError(repositoryPath, error));
-      }
+      scanErrors.push(describeScanError(directory, error));
     }
   }
 

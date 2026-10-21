@@ -87,6 +87,15 @@ test('repository list satisfies the shared contract with Git, package and deploy
     originError: null,
     urls,
     hosting,
+    deploymentEnvironments: [
+      {
+        environment: 'production',
+        label: 'Production',
+        branch: null,
+        url: urls.production,
+        hosting: { label: 'Vercel', url: hosting.production },
+      },
+    ],
   });
 });
 
@@ -170,6 +179,7 @@ test('repository contract rejects incompatible mock formats and missing nullable
     originError: null,
     urls: {},
     hosting: {},
+    deploymentEnvironments: [],
   };
   for (const incompatible of [
     { ...repository, versions: { ...repository.versions, head: '1.2.3' } },

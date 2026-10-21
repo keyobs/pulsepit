@@ -17,7 +17,12 @@ const config = readConfig();
 const deploymentConfig = await loadRepositoryDeploymentConfig(
   config.configPath,
 );
-const app = buildApp(config, deploymentConfig.urls, deploymentConfig.hosting);
+const app = buildApp(
+  config,
+  deploymentConfig.urls,
+  deploymentConfig.hosting,
+  deploymentConfig.environments,
+);
 
 try {
   await app.listen({ port: config.port, host: '127.0.0.1' });

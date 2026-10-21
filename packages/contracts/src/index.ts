@@ -1,4 +1,11 @@
 export { BranchesResponse, LocalBranch } from './branches.js';
+export {
+  DeploymentEnvironment,
+  DeploymentEnvironmentConfig,
+  DeploymentHosting,
+  DeploymentMetadataError,
+  DeploymentsResponse,
+} from './deployments.js';
 export { ErrorResponse } from './errors.js';
 export {
   FetchRequest,
@@ -6,6 +13,10 @@ export {
   PushRequest,
   PushResponse,
 } from './git-actions.js';
+export {
+  GithubActionsRun,
+  GithubActionsRunsResponse,
+} from './github-actions.js';
 export {
   DeploymentCheck,
   MonitoringRequest,

@@ -29,11 +29,13 @@ test('hosting console links by repository and environment', async (t) => {
       assert.deepEqual(await loadRepositoryDeploymentConfig(file), {
         urls: {},
         hosting: {},
+        environments: {},
       });
       await write({});
       assert.deepEqual(await loadRepositoryDeploymentConfig(file), {
         urls: {},
         hosting: {},
+        environments: {},
       });
       await write({
         repositories: {
@@ -67,6 +69,27 @@ test('hosting console links by repository and environment', async (t) => {
           [configured]: {
             staging: 'https://console.example.invalid/projects/app',
           },
+        },
+        environments: {
+          [configured]: [
+            {
+              environment: 'production',
+              label: 'Production',
+              branch: null,
+              url: 'https://app.example.invalid/health',
+              hosting: null,
+            },
+            {
+              environment: 'staging',
+              label: 'Test',
+              branch: null,
+              url: null,
+              hosting: {
+                label: 'Example',
+                url: 'https://console.example.invalid/projects/app',
+              },
+            },
+          ],
         },
       });
     },

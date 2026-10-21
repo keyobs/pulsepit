@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { DeploymentEnvironmentConfig } from './deployments.js';
 import { OriginRemote } from './origin.js';
 
 export const GitStatus = z.object({
@@ -56,6 +57,7 @@ export const Repository = z.object({
   originError: z.string().nullable(),
   urls: z.record(z.string(), z.string()),
   hosting: z.record(z.string(), z.string()),
+  deploymentEnvironments: z.array(DeploymentEnvironmentConfig),
 });
 
 export type Repository = z.infer<typeof Repository>;
