@@ -12,9 +12,15 @@ export interface GithubPagesDateSource {
   type: 'github-pages';
   environment: string;
 }
+export interface VercelDateSource {
+  type: 'vercel';
+  projectId: string;
+  teamId?: string;
+}
+export type DeploymentDateSource = GithubPagesDateSource | VercelDateSource;
 export type ConfiguredDeploymentEnvironment = DeploymentEnvironmentConfig & {
   metadata?: StaticMetadataSource;
-  deploymentDate?: GithubPagesDateSource;
+  deploymentDate?: DeploymentDateSource;
 };
 export type RepositoryEnvironments = Record<
   string,
@@ -192,7 +198,28 @@ function validateDeploymentDateSource(
   value: unknown,
   environment: string,
   path: string,
-): GithubPagesDateSource {
+): DeploymentDateSource {
+  if (isObject(value) && value.type === 'vercel') {
+    if (
+      typeof value.projectId !== 'string' ||
+      !/^prj_[a-z\d]{1,128}$/i.test(value.projectId) ||
+      (value.teamId !== undefined &&
+        (typeof value.teamId !== 'string' ||
+          !/^team_[a-z\d]{1,128}$/i.test(value.teamId))) ||
+      Object.keys(value).some(
+        (key) => !['type', 'projectId', 'teamId'].includes(key),
+      )
+    ) {
+      throw new Error(
+        `Invalid deployment date source for ${environment} in ${path}.`,
+      );
+    }
+    return {
+      type: 'vercel',
+      projectId: value.projectId,
+      ...(value.teamId === undefined ? {} : { teamId: value.teamId }),
+    };
+  }
   if (
     !isObject(value) ||
     value.type !== 'github-pages' ||
@@ -201,7 +228,9 @@ function validateDeploymentDateSource(
     value.environment.length > 255 ||
     Object.keys(value).some((key) => key !== 'type' && key !== 'environment')
   ) {
-    throw new Error(`Invalid deployment date source for ${environment} in ${path}.`);
+    throw new Error(
+      `Invalid deployment date source for ${environment} in ${path}.`,
+    );
   }
   return { type: 'github-pages', environment: value.environment };
 }
@@ -209,7 +238,7 @@ function validateDeploymentDateSource(
 export function getDeploymentDateSources(
   path: string,
   environments: RepositoryEnvironments,
-): Record<string, GithubPagesDateSource> {
+): Record<string, DeploymentDateSource> {
   return Object.fromEntries(
     (environments[path] ?? []).flatMap((entry) =>
       entry.deploymentDate === undefined

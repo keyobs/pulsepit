@@ -5,15 +5,15 @@ import { collectDeploymentDates } from '../../services/deployment-date.service.j
 import { collectDeploymentMetadata } from '../../services/deployment-metadata.service.js';
 import { findConfiguredRepository } from '../../services/repositories.service.js';
 import {
-  getDeploymentEnvironments,
   getDeploymentDateSources,
+  getDeploymentEnvironments,
   getDeploymentMetadataSources,
   type RepositoryEnvironments,
   type RepositoryUrls,
 } from '../../services/repository-config.service.js';
 
 export const getDeploymentsRoutes: FastifyPluginAsync<
-  Pick<AppConfig, 'scanPaths' | 'githubToken'> & {
+  Pick<AppConfig, 'scanPaths' | 'githubToken' | 'vercelToken'> & {
     repositoryEnvironments: RepositoryEnvironments;
     repositoryUrls: RepositoryUrls;
     repositoryHosting: RepositoryUrls;
@@ -49,19 +49,25 @@ export const getDeploymentsRoutes: FastifyPluginAsync<
         options.repositoryHosting,
       );
       const metadata = await collectDeploymentMetadata(
-          environments,
-          getDeploymentMetadataSources(
-            repository.path,
-            options.repositoryEnvironments,
-          ),
+        environments,
+        getDeploymentMetadataSources(
+          repository.path,
+          options.repositoryEnvironments,
+        ),
       );
       return {
         path: repository.path,
         environments: await collectDeploymentDates(
           repository.path,
           metadata,
-          getDeploymentDateSources(repository.path, options.repositoryEnvironments),
-          options.githubToken,
+          getDeploymentDateSources(
+            repository.path,
+            options.repositoryEnvironments,
+          ),
+          {
+            githubToken: options.githubToken,
+            vercelToken: options.vercelToken,
+          },
         ),
       } satisfies DeploymentsResponse;
     },

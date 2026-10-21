@@ -20,6 +20,7 @@ export function buildApp(
     prefix: '/api/repositories',
     scanPaths: config.scanPaths,
     githubToken: config.githubToken,
+    vercelToken: config.vercelToken,
     repositoryUrls,
     repositoryHosting,
     repositoryEnvironments,

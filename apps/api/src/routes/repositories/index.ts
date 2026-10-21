@@ -10,7 +10,7 @@ import { getRepositoriesRoutes } from './get-repositories.routes.js';
 import { postRepositoriesRoutes } from './post-repositories.routes.js';
 
 export const repositoriesRoutes: FastifyPluginAsync<
-  Pick<AppConfig, 'scanPaths' | 'githubToken'> & {
+  Pick<AppConfig, 'scanPaths' | 'githubToken' | 'vercelToken'> & {
     repositoryUrls: RepositoryUrls;
     repositoryHosting: RepositoryUrls;
     repositoryEnvironments: RepositoryEnvironments;
@@ -18,6 +18,8 @@ export const repositoriesRoutes: FastifyPluginAsync<
 > = async (app, options) => {
   app.register(getDeploymentsRoutes, {
     scanPaths: options.scanPaths,
+    githubToken: options.githubToken,
+    vercelToken: options.vercelToken,
     repositoryUrls: options.repositoryUrls,
     repositoryHosting: options.repositoryHosting,
     repositoryEnvironments: options.repositoryEnvironments,
