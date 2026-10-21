@@ -34,6 +34,7 @@ const alias = Object.fromEntries(
     'features',
     'hooks',
     'styles',
+    'test',
     'utils',
   ].map((name) => [
     `@${name}`,
