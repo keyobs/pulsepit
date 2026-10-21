@@ -14,7 +14,8 @@ export const API_ERROR_MESSAGES: Record<string, string> = {
   AUTHENTICATION_FAILED: 'Authentification refusée par le remote.',
   PUSH_FAILED: 'Le push a échoué.',
   BRANCHES_FAILED: 'Impossible de lister les branches locales.',
-  PACKAGE_MANAGER: 'Gestionnaire de paquets non détecté ou non pris en charge.',
+  PACKAGE_MANAGER:
+    'Gestionnaire de packages non détecté ou non pris en charge.',
   COMMAND_FAILED: 'La commande de diagnostic a échoué.',
   INVALID_OUTPUT: 'Le diagnostic a renvoyé un résultat inexploitable.',
 };

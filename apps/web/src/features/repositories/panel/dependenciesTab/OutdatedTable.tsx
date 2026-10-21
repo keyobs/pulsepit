@@ -5,7 +5,7 @@ import {
 } from '@components/dataTable/DataTable';
 
 const COLUMNS: DataTableColumn<OutdatedDependency>[] = [
-  { key: 'name', header: 'Paquet', render: (dependency) => dependency.name },
+  { key: 'name', header: 'Package', render: (dependency) => dependency.name },
   {
     key: 'current',
     header: 'Actuelle',

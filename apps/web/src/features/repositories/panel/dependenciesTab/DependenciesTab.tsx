@@ -2,6 +2,7 @@ import type { Repository } from '@api/types';
 import { Button } from '@components/button/Button';
 import { Chip } from '@components/chip/Chip';
 import { EmptyState } from '@components/emptyState/EmptyState';
+import { useBeaconVersion } from '@hooks/useBeaconVersion';
 import { useDisclosure } from '@hooks/useDisclosure';
 import { describeApiError } from '@utils/describeApiError';
 import { TbStethoscope } from 'react-icons/tb';
@@ -18,6 +19,7 @@ export const DependenciesTab = ({ repository }: DependenciesTabProps) => {
   const { outdated } = useRepositoryRuntime(repository.path);
   const manifest = useDisclosure();
   const { status, data, error } = outdated.state;
+  const beacon = useBeaconVersion(repository.path, repository.beacon.package);
 
   return (
     <div className="pp-dependencies-tab">
@@ -40,6 +42,14 @@ export const DependenciesTab = ({ repository }: DependenciesTabProps) => {
         </Button>
         <span className="pp-dependencies-tab-manager">
           Détecté : {repository.packageManager.name ?? 'aucun'}
+        </span>
+        <span className="pp-dependencies-tab-beacon">
+          Beacon :{' '}
+          {!repository.beacon.package
+            ? 'non détecté'
+            : beacon.isLoading
+              ? '…'
+              : (beacon.version ?? 'déclaré, version inconnue')}
         </span>
       </div>
 
