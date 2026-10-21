@@ -16,4 +16,15 @@ export const DEPLOYMENT_METADATA_ERROR_MESSAGES: Record<string, string> = {
     'Dépôt GitHub privé ou inaccessible, vérifier GITHUB_TOKEN côté serveur.',
   GITHUB_REQUEST_FAILED: 'La requête vers GitHub a échoué.',
   GITHUB_INVALID_RESPONSE: 'GitHub a renvoyé une réponse inexploitable.',
+  VERCEL_TOKEN_REQUIRED:
+    'Jeton Vercel absent : renseigner VERCEL_TOKEN côté serveur.',
+  VERCEL_AUTHENTICATION_FAILED:
+    'Vercel a refusé le jeton configuré côté serveur.',
+  VERCEL_FORBIDDEN: "Vercel refuse l'accès à ce projet.",
+  VERCEL_DEPLOYMENT_UNAVAILABLE:
+    'Déploiement Vercel introuvable ou inaccessible, vérifier le projet et l’équipe.',
+  VERCEL_RATE_LIMITED:
+    'Limite de requêtes Vercel atteinte, réessayer plus tard.',
+  VERCEL_REQUEST_FAILED: 'La requête vers Vercel a échoué.',
+  VERCEL_INVALID_RESPONSE: 'Vercel a renvoyé une réponse inexploitable.',
 };

@@ -24,7 +24,8 @@ interface EnvironmentCardProps {
 
 const SOURCE_LABELS = {
   delivery: 'Fournie par la livraison',
-  provider: "Observée chez l'hébergeur",
+  provider:
+    "Observée chez l'hébergeur : première mise à disposition du déploiement en ligne. Une promotion ou un retour arrière conserve cette date.",
 } as const;
 
 export const EnvironmentCard = ({
