@@ -1,0 +1,25 @@
+// Les features importent les types du contrat d'ici, jamais directement du package.
+export type {
+  BranchesResponse,
+  DeploymentCheck,
+  ErrorResponse,
+  FetchResponse,
+  GitStatus,
+  ListRepositoriesResponse,
+  LocalBranch,
+  MonitoringResponse,
+  OriginRemote,
+  OutdatedDependency,
+  OutdatedResponse,
+  PackageResponse,
+  PackageVersion,
+  PackageVersions,
+  PushResponse,
+  Repository,
+  RepositorySync,
+  ScanError,
+  WorkflowEntry,
+  WorkflowsResponse,
+} from '@pulsepit/contracts';
+
+export type PackageRef = 'head' | 'main' | 'develop';
