@@ -6,9 +6,11 @@ import type {
 import { Button } from '@components/button/Button';
 import { Card } from '@components/card/Card';
 import { Chip } from '@components/chip/Chip';
+import { CopyButton } from '@components/copyButton/CopyButton';
 import { LabeledCell } from '@components/labeledCell/LabeledCell';
 import { LinkRow } from '@components/linkRow/LinkRow';
 import { StatusDot } from '@components/statusDot/StatusDot';
+import { DEPLOYMENT_METADATA_ERROR_MESSAGES } from '@constants/deploymentMetadataErrors';
 import { useLinkFeedback } from '@hooks/useLinkFeedback';
 import { formatDateTime } from '@utils/formatDate';
 import { useRepositoryRuntime } from '../../hooks/useRepositoryRuntime';
@@ -17,7 +19,6 @@ import './environmentCard.less';
 interface EnvironmentCardProps {
   repository: Repository;
   config: DeploymentEnvironmentConfig;
-  /** Métadonnées de la dernière consultation ; `null` tant qu'elle n'a pas abouti. */
   metadata: DeploymentEnvironment | null;
 }
 
@@ -26,7 +27,6 @@ const SOURCE_LABELS = {
   provider: "Observée chez l'hébergeur",
 } as const;
 
-/** Une carte par environnement : statut, branche, liens, date de déploiement et Ping de cet environnement. */
 export const EnvironmentCard = ({
   repository,
   config,
@@ -108,6 +108,30 @@ export const EnvironmentCard = ({
           </span>
         )}
       </LabeledCell>
+      <LabeledCell label="Version déployée">
+        {metadata?.version ? (
+          <span className="pp-environment-card-mono">{metadata.version}</span>
+        ) : (
+          <span className="pp-environment-card-none">Inconnue</span>
+        )}
+      </LabeledCell>
+      <LabeledCell label="Commit déployé">
+        {metadata?.commit ? (
+          <span className="pp-environment-card-commit">
+            <span className="pp-environment-card-mono" title={metadata.commit}>
+              {metadata.commit.slice(0, 7)}
+            </span>
+            <CopyButton
+              value={metadata.commit}
+              label="Copier le commit"
+              onCopied={feedback.onCopied}
+              onError={feedback.onCopyError}
+            />
+          </span>
+        ) : (
+          <span className="pp-environment-card-none">Inconnu</span>
+        )}
+      </LabeledCell>
       <LabeledCell label="Déployé le">
         {metadata?.deployedAt ? (
           <span
@@ -131,7 +155,8 @@ export const EnvironmentCard = ({
       {metadata?.metadataError && (
         <span className="pp-environment-card-error" role="alert">
           Métadonnées indisponibles ({metadata.metadataError.code}) :{' '}
-          {metadata.metadataError.message}
+          {DEPLOYMENT_METADATA_ERROR_MESSAGES[metadata.metadataError.code] ??
+            metadata.metadataError.message}
         </span>
       )}
       {check && (

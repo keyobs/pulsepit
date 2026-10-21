@@ -15,7 +15,6 @@ const splitTargetKey = (key: string): [path: string, environment: string] => {
   return [path, environment];
 };
 
-/** Pour un environnement, garde le contrôle le plus récent. */
 function mergeChecks(
   bulk: DeploymentCheck[],
   targeted: DeploymentCheck[],
@@ -30,10 +29,6 @@ function mergeChecks(
   return [...merged.values()];
 }
 
-/**
- * Vérification des déploiements configurés (online / offline) : tous les environnements d'un dépôt
- * ou de tous les dépôts, ou un seul environnement (Ping d'une carte) avec son propre état de chargement.
- */
 export function useDeploymentActions() {
   const { showToast } = useToast();
   const [targetedChecks, setTargetedChecks] = useState<
@@ -79,7 +74,6 @@ export function useDeploymentActions() {
     );
   };
 
-  /** Contrôles connus d'un dépôt, tous types d'appel confondus ; `null` tant qu'aucun n'a eu lieu. */
   const monitoringOf = useCallback(
     (path: string): MonitoringResponse | null => {
       const whole = bulk.stateOf(path).data;

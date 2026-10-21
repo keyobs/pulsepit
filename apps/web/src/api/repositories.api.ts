@@ -53,7 +53,6 @@ export const getPackage = (path: string, ref: PackageRef = 'head') =>
     schema: PackageResponse,
   });
 
-/** Sans `environment`, contrôle toutes les URL du dépôt ; avec, uniquement celle de cet environnement. */
 export const checkDeployments = (path: string, environment?: string) =>
   apiRequest(`${BASE}/monitoring`, {
     method: 'POST',

@@ -145,6 +145,8 @@ describe('repositories api', () => {
             branch: 'main',
             url: 'https://app.domaine.fr',
             hosting: { label: 'Vercel', url: null },
+            version: '0.1.0',
+            commit: '520dff16bacefd51d0c659d50a688ea3240e150f',
             deployedAt: null,
             deploymentSource: null,
             metadataCheckedAt: null,
@@ -158,6 +160,7 @@ describe('repositories api', () => {
       `/api/repositories/deployments?path=${encodeURIComponent(PATH)}`,
     );
     expect(result.environments[0].hosting?.label).toBe('Vercel');
+    expect(result.environments[0].version).toBe('0.1.0');
   });
 
   it('lists workflows', async () => {

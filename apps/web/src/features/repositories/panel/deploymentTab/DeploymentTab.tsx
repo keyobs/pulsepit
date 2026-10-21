@@ -18,7 +18,6 @@ export const DeploymentTab = ({ repository }: DeploymentTabProps) => {
   const metadata = useDeployments(repository.path);
   const { run } = metadata;
 
-  // Consultation à l'ouverture de l'onglet, jamais au chargement de la liste.
   useEffect(() => {
     void run();
   }, [run]);
