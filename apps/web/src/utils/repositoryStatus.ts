@@ -1,4 +1,5 @@
 import type {
+  DeploymentEnvironmentConfig,
   MonitoringResponse,
   OutdatedResponse,
   Repository,
@@ -17,8 +18,9 @@ export const isDevelopAhead = (repository: Repository): boolean => {
   );
 };
 
-export const environmentsOf = (repository: Repository): string[] =>
-  Object.keys(repository.urls);
+export const environmentsOf = (
+  repository: Repository,
+): DeploymentEnvironmentConfig[] => repository.deploymentEnvironments;
 
 export const isOffline = (monitoring: MonitoringResponse | null): boolean =>
   monitoring?.checks.some((check) => check.status === 'offline') ?? false;

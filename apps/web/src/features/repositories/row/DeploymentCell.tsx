@@ -13,7 +13,7 @@ interface DeploymentCellProps {
 export const DeploymentCell = ({ repository }: DeploymentCellProps) => {
   const { deployments } = useRepositoryRuntime(repository.path);
   const environments = environmentsOf(repository);
-  const checks = deployments.state.data?.checks ?? [];
+  const checks = deployments.monitoring?.checks ?? [];
 
   return (
     <LabeledCell label="Déploiement">
@@ -21,7 +21,7 @@ export const DeploymentCell = ({ repository }: DeploymentCellProps) => {
         <span className="pp-muted-text">Non configuré</span>
       ) : (
         <Stack>
-          {environments.map((environment) => {
+          {environments.map(({ environment, label }) => {
             const status = checks.find(
               (check) => check.environment === environment,
             )?.status;
@@ -40,7 +40,7 @@ export const DeploymentCell = ({ repository }: DeploymentCellProps) => {
                   />
                 }
               >
-                {environment}
+                {label}
               </Chip>
             );
           })}
