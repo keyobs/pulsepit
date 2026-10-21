@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { useBranches } from './useBranches';
+import { useDeployments } from './useDeployments';
 import { usePackageManifest } from './usePackageManifest';
 import { useWorkflows } from './useWorkflows';
 
@@ -11,6 +12,7 @@ const api = vi.hoisted(() => ({
   getPackage: vi.fn(),
   checkDeployments: vi.fn(),
   getWorkflows: vi.fn(),
+  getDeployments: vi.fn(),
 }));
 vi.mock('@api/repositories.api', () => api);
 
@@ -27,6 +29,13 @@ describe('repository action hooks', () => {
     expect(api.getBranches).not.toHaveBeenCalled();
     await act(async () => void (await result.current.run()));
     expect(api.getBranches).toHaveBeenCalledWith(PATH);
+  });
+
+  it('useDeployments reads the environment cards on demand', async () => {
+    const { result } = renderHook(() => useDeployments(PATH));
+    expect(api.getDeployments).not.toHaveBeenCalled();
+    await act(async () => void (await result.current.run()));
+    expect(api.getDeployments).toHaveBeenCalledWith(PATH);
   });
 
   it('useWorkflows reads the workflows', async () => {

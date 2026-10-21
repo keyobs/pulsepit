@@ -10,7 +10,7 @@ export const SummaryBar = () => {
   const { list, deployments, diagnostics } = useRepositoriesContext();
   const summary = summarizeRepositories(
     list.repositories,
-    (path) => deployments.stateOf(path).data,
+    deployments.monitoringOf,
     (path) => diagnostics.stateOf(path).data,
   );
 

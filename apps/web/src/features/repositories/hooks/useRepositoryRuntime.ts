@@ -11,7 +11,11 @@ export function useRepositoryRuntime(path: string) {
     },
     deployments: {
       state: deployments.stateOf(path),
+      monitoring: deployments.monitoringOf(path),
       run: () => deployments.run(path),
+      pingStateOf: (environment: string) =>
+        deployments.pingStateOf(path, environment),
+      ping: (environment: string) => deployments.ping(path, environment),
     },
     isExpanded: view.isExpanded(path),
     toggleExpanded: () => view.toggle(path),

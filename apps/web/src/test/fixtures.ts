@@ -36,6 +36,18 @@ export function makeRepository(
     originError: null,
     urls: { production: 'https://app.domaine.fr' },
     hosting: { production: 'https://vercel.com/domaine/mon-app' },
+    deploymentEnvironments: [
+      {
+        environment: 'production',
+        label: 'Production',
+        branch: 'main',
+        url: 'https://app.domaine.fr',
+        hosting: {
+          label: 'Vercel',
+          url: 'https://vercel.com/domaine/mon-app',
+        },
+      },
+    ],
     ...overrides,
   };
 }

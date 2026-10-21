@@ -1,6 +1,7 @@
 import { LIST_REQUEST_TIMEOUT_MS } from '@constants/api';
 import {
   BranchesResponse,
+  DeploymentsResponse,
   FetchResponse,
   ListRepositoriesResponse,
   MonitoringResponse,
@@ -52,11 +53,18 @@ export const getPackage = (path: string, ref: PackageRef = 'head') =>
     schema: PackageResponse,
   });
 
-export const checkDeployments = (path: string) =>
+/** Sans `environment`, contrôle toutes les URL du dépôt ; avec, uniquement celle de cet environnement. */
+export const checkDeployments = (path: string, environment?: string) =>
   apiRequest(`${BASE}/monitoring`, {
     method: 'POST',
-    body: { path },
+    body: environment === undefined ? { path } : { path, environment },
     schema: MonitoringResponse,
+  });
+
+export const getDeployments = (path: string) =>
+  apiRequest(`${BASE}/deployments`, {
+    query: { path },
+    schema: DeploymentsResponse,
   });
 
 export const getWorkflows = (path: string) =>

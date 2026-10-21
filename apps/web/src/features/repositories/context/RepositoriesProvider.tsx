@@ -21,7 +21,7 @@ export const RepositoriesProvider = ({
   const view = useExpandedRepositories();
   const filters = useRepositoryFilters(
     list.repositories,
-    (path) => deployments.stateOf(path).data,
+    deployments.monitoringOf,
     (path) => diagnostics.stateOf(path).data,
   );
 

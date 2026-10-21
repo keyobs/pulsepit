@@ -2,6 +2,9 @@
 export type {
   BranchesResponse,
   DeploymentCheck,
+  DeploymentEnvironment,
+  DeploymentEnvironmentConfig,
+  DeploymentsResponse,
   ErrorResponse,
   FetchResponse,
   GitStatus,

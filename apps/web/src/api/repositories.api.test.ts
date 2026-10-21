@@ -3,6 +3,7 @@ import {
   checkDeployments,
   fetchRepository,
   getBranches,
+  getDeployments,
   getOrigin,
   getOutdated,
   getPackage,
@@ -120,6 +121,43 @@ describe('repositories api', () => {
     const result = await checkDeployments(PATH);
     expect(lastCall().url).toBe('/api/repositories/monitoring');
     expect(result.configured).toBe(false);
+  });
+
+  it('pings a single environment when one is given', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({ path: PATH, configured: true, checks: [] }),
+    );
+    await checkDeployments(PATH, 'staging');
+    expect(JSON.parse(lastCall().init.body as string)).toEqual({
+      path: PATH,
+      environment: 'staging',
+    });
+  });
+
+  it('reads the deployment environments', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({
+        path: PATH,
+        environments: [
+          {
+            environment: 'production',
+            label: 'Production',
+            branch: 'main',
+            url: 'https://app.domaine.fr',
+            hosting: { label: 'Vercel', url: null },
+            deployedAt: null,
+            deploymentSource: null,
+            metadataCheckedAt: null,
+            metadataError: null,
+          },
+        ],
+      }),
+    );
+    const result = await getDeployments(PATH);
+    expect(lastCall().url).toBe(
+      `/api/repositories/deployments?path=${encodeURIComponent(PATH)}`,
+    );
+    expect(result.environments[0].hosting?.label).toBe('Vercel');
   });
 
   it('lists workflows', async () => {
