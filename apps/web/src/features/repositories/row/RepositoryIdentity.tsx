@@ -1,4 +1,5 @@
 import type { Repository } from '@api/types';
+import { BeaconIndicator } from '../beacon/BeaconIndicator';
 import './repositoryIdentity.less';
 
 interface RepositoryIdentityProps {
@@ -19,7 +20,10 @@ export const RepositoryIdentity = ({
     aria-expanded={expanded}
     onClick={onToggle}
   >
-    <span className="pp-repository-identity-name">{repository.name}</span>
+    <span className="pp-repository-identity-name">
+      {repository.name}
+      <BeaconIndicator beacon={repository.beacon} />
+    </span>
     <span className="pp-repository-identity-path" title={repository.path}>
       {repository.path}
     </span>

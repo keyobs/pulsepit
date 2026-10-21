@@ -1,0 +1,15 @@
+.pp-beacon-indicator {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  color: var(--muted);
+  vertical-align: middle;
+
+  &.active {
+    color: var(--ok);
+  }
+
+  &.absent {
+    opacity: 0.6;
+  }
+}

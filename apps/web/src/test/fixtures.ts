@@ -16,6 +16,7 @@ export function makeRepository(
     gitError: null,
     sync: { upstream: 'origin/develop', ahead: 1, behind: 0 },
     developLastCommitAt: '2026-10-17T18:05:00.000Z',
+    lastActivityAt: '2026-10-17T18:05:00.000Z',
     versions: {
       head: { version: '2.4.0', error: null },
       main: { version: '2.3.1', error: null },
@@ -34,6 +35,7 @@ export function makeRepository(
       },
     },
     originError: null,
+    beacon: { package: false, configuration: 'missing', active: false },
     urls: { production: 'https://app.domaine.fr' },
     hosting: { production: 'https://vercel.com/domaine/mon-app' },
     deploymentEnvironments: [
