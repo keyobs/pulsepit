@@ -24,6 +24,8 @@ export const DeploymentMetadataError = z.object({
 export type DeploymentMetadataError = z.infer<typeof DeploymentMetadataError>;
 
 export const DeploymentEnvironment = DeploymentEnvironmentConfig.extend({
+  version: z.string().nullable(),
+  commit: z.string().nullable(),
   deployedAt: z.iso.datetime().nullable(),
   deploymentSource: z.enum(['delivery', 'provider']).nullable(),
   metadataCheckedAt: z.iso.datetime().nullable(),

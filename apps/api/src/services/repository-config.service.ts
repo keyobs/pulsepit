@@ -4,9 +4,21 @@ import { isAbsolute, join, resolve } from 'node:path';
 import { DeploymentEnvironmentConfig } from '@pulsepit/contracts';
 
 export type RepositoryUrls = Record<string, Record<string, string>>;
+export interface StaticMetadataSource {
+  type: 'static';
+  url: string;
+}
+export interface GithubPagesDateSource {
+  type: 'github-pages';
+  environment: string;
+}
+export type ConfiguredDeploymentEnvironment = DeploymentEnvironmentConfig & {
+  metadata?: StaticMetadataSource;
+  deploymentDate?: GithubPagesDateSource;
+};
 export type RepositoryEnvironments = Record<
   string,
-  DeploymentEnvironmentConfig[]
+  ConfiguredDeploymentEnvironment[]
 >;
 
 export interface RepositoryDeploymentConfig {
@@ -98,7 +110,7 @@ export async function loadRepositoryDeploymentConfig(
 function validateDeployments(
   value: unknown,
   path: string,
-): DeploymentEnvironmentConfig[] {
+): ConfiguredDeploymentEnvironment[] {
   if (!isObject(value))
     throw new Error(`Repository deployments must be an object for ${path}.`);
   return Object.entries(value).map(([environment, settings]) => {
@@ -124,6 +136,24 @@ function validateDeployments(
     }
     return {
       ...parsed.data,
+      ...(settings.metadata === undefined
+        ? {}
+        : {
+            metadata: validateMetadataSource(
+              settings.metadata,
+              environment,
+              path,
+            ),
+          }),
+      ...(settings.deploymentDate === undefined
+        ? {}
+        : {
+            deploymentDate: validateDeploymentDateSource(
+              settings.deploymentDate,
+              environment,
+              path,
+            ),
+          }),
       url: parsed.data.url === null ? null : new URL(parsed.data.url).href,
       hosting:
         parsed.data.hosting === null
@@ -137,6 +167,67 @@ function validateDeployments(
             },
     };
   });
+}
+
+function validateMetadataSource(
+  value: unknown,
+  environment: string,
+  path: string,
+): StaticMetadataSource {
+  if (
+    !isObject(value) ||
+    value.type !== 'static' ||
+    typeof value.url !== 'string' ||
+    Object.keys(value).some((key) => key !== 'type' && key !== 'url')
+  ) {
+    throw new Error(`Invalid metadata source for ${environment} in ${path}.`);
+  }
+  return {
+    type: 'static',
+    url: validateUrl(value.url, `metadata.${environment}`, path).href,
+  };
+}
+
+function validateDeploymentDateSource(
+  value: unknown,
+  environment: string,
+  path: string,
+): GithubPagesDateSource {
+  if (
+    !isObject(value) ||
+    value.type !== 'github-pages' ||
+    typeof value.environment !== 'string' ||
+    !value.environment.trim() ||
+    value.environment.length > 255 ||
+    Object.keys(value).some((key) => key !== 'type' && key !== 'environment')
+  ) {
+    throw new Error(`Invalid deployment date source for ${environment} in ${path}.`);
+  }
+  return { type: 'github-pages', environment: value.environment };
+}
+
+export function getDeploymentDateSources(
+  path: string,
+  environments: RepositoryEnvironments,
+): Record<string, GithubPagesDateSource> {
+  return Object.fromEntries(
+    (environments[path] ?? []).flatMap((entry) =>
+      entry.deploymentDate === undefined
+        ? []
+        : [[entry.environment, entry.deploymentDate]],
+    ),
+  );
+}
+
+export function getDeploymentMetadataSources(
+  path: string,
+  environments: RepositoryEnvironments,
+): Record<string, StaticMetadataSource> {
+  return Object.fromEntries(
+    (environments[path] ?? []).flatMap((entry) =>
+      entry.metadata === undefined ? [] : [[entry.environment, entry.metadata]],
+    ),
+  );
 }
 
 // Compatibility only: canonical deployments always supply the hosting label.
@@ -201,9 +292,16 @@ export function getDeploymentEnvironments(
   urls: RepositoryUrls,
   hosting: RepositoryUrls,
 ): DeploymentEnvironmentConfig[] {
-  return (
+  const configured =
     environments[path] ??
-    legacyEnvironments(urls[path] ?? {}, hosting[path] ?? {})
+    legacyEnvironments(urls[path] ?? {}, hosting[path] ?? {});
+  // Collection settings stay server-side, including in list/detail responses.
+  return configured.map(
+    ({
+      metadata: _metadata,
+      deploymentDate: _deploymentDate,
+      ...environment
+    }: ConfiguredDeploymentEnvironment) => environment,
   );
 }
 

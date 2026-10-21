@@ -1,15 +1,19 @@
 import type { DeploymentsResponse, ErrorResponse } from '@pulsepit/contracts';
 import type { FastifyPluginAsync } from 'fastify';
 import type { AppConfig } from '../../config.js';
+import { collectDeploymentDates } from '../../services/deployment-date.service.js';
+import { collectDeploymentMetadata } from '../../services/deployment-metadata.service.js';
 import { findConfiguredRepository } from '../../services/repositories.service.js';
 import {
   getDeploymentEnvironments,
+  getDeploymentDateSources,
+  getDeploymentMetadataSources,
   type RepositoryEnvironments,
   type RepositoryUrls,
 } from '../../services/repository-config.service.js';
 
 export const getDeploymentsRoutes: FastifyPluginAsync<
-  Pick<AppConfig, 'scanPaths'> & {
+  Pick<AppConfig, 'scanPaths' | 'githubToken'> & {
     repositoryEnvironments: RepositoryEnvironments;
     repositoryUrls: RepositoryUrls;
     repositoryHosting: RepositoryUrls;
@@ -44,15 +48,21 @@ export const getDeploymentsRoutes: FastifyPluginAsync<
         options.repositoryUrls,
         options.repositoryHosting,
       );
+      const metadata = await collectDeploymentMetadata(
+          environments,
+          getDeploymentMetadataSources(
+            repository.path,
+            options.repositoryEnvironments,
+          ),
+      );
       return {
         path: repository.path,
-        environments: environments.map((environment) => ({
-          ...environment,
-          deployedAt: null,
-          deploymentSource: null,
-          metadataCheckedAt: null,
-          metadataError: null,
-        })),
+        environments: await collectDeploymentDates(
+          repository.path,
+          metadata,
+          getDeploymentDateSources(repository.path, options.repositoryEnvironments),
+          options.githubToken,
+        ),
       } satisfies DeploymentsResponse;
     },
   );

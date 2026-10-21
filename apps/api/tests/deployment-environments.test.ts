@@ -177,6 +177,8 @@ test('deployment route, repository list and detail expose the same local configu
     parsed.environments,
     config.environments[path].map((entry) => ({
       ...entry,
+      version: null,
+      commit: null,
       deployedAt: null,
       deploymentSource: null,
       metadataCheckedAt: null,
