@@ -1,0 +1,32 @@
+@import "@styles/breakpoints.less";
+
+.pp-repository-row {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--surface);
+
+  &.open {
+    border-color: var(--accent);
+  }
+
+  .pp-repository-row-main {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1.2fr) minmax(0, 1.6fr) minmax(0, 1fr) auto;
+    gap: 10px 16px;
+    align-items: center;
+    padding: 12px 14px;
+
+    @media (max-width: @small) {
+      grid-template-columns: minmax(0, 1fr) auto;
+
+      // Les cellules d'information passent sur toute la largeur.
+      > :nth-child(n + 2):nth-child(-n + 4) {
+        grid-column: 1 / -1;
+      }
+
+      > :last-child {
+        grid-column: 1 / -1;
+      }
+    }
+  }
+}

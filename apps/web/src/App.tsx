@@ -1,7 +1,13 @@
+import { ToastProvider } from '@components/toast/ToastProvider';
+import { AppLayout } from '@features/app/AppLayout';
+import { RepositoriesProvider } from '@features/repositories/context/RepositoriesProvider';
+
 export function App() {
   return (
-    <main>
-      <h1>Pulsepit</h1>
-    </main>
+    <ToastProvider>
+      <RepositoriesProvider>
+        <AppLayout />
+      </RepositoriesProvider>
+    </ToastProvider>
   );
 }

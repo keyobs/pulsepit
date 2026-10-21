@@ -1,0 +1,31 @@
+.pp-versions-cell {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 18px 12px;
+  align-items: center;
+
+  .pp-chip {
+    justify-self: start;
+  }
+
+  .pp-versions-cell-date {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.2;
+
+    b {
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    small {
+      color: var(--muted);
+      font-size: 10.5px;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+  }
+}
