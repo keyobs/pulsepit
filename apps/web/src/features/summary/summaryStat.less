@@ -1,0 +1,29 @@
+.pp-summary-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+
+  .pp-summary-stat-value {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pp-summary-stat-label {
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  &.ok .pp-summary-stat-value {
+    color: var(--ok);
+  }
+
+  &.warn .pp-summary-stat-value {
+    color: var(--warn);
+  }
+
+  &.bad .pp-summary-stat-value {
+    color: var(--bad);
+  }
+}
