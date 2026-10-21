@@ -1,0 +1,42 @@
+{
+  "name": "@keyobs/pulsepit-beacon",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "sideEffects": false,
+  "description": "Explicit deployment metadata for Pulsepit applications.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/keyobs/pulsepit.git",
+    "directory": "packages/beacon"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./static": {
+      "types": "./static/index.d.ts",
+      "import": "./static/index.mjs"
+    }
+  },
+  "files": [
+    "dist",
+    "static"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check-types": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "prepack": "npm run build"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2"
+  }
+}
