@@ -5,9 +5,10 @@ import type {
 } from '@api/types';
 import type { RepositoryFilter } from '@constants/repositoryFilters';
 import { hasOutdated, isDirty, isOffline } from '@utils/repositoryStatus';
+import { sortByRecentActivity } from '@utils/sortRepositories';
 import { useMemo, useState } from 'react';
 
-/** Recherche par nom ou chemin et filtre d'état. */
+/* Search: name, state */
 export function useRepositoryFilters(
   repositories: Repository[],
   getMonitoring: (path: string) => MonitoringResponse | null,
@@ -18,7 +19,7 @@ export function useRepositoryFilters(
 
   const visibleRepositories = useMemo(() => {
     const text = query.trim().toLowerCase();
-    return repositories.filter((repository) => {
+    return sortByRecentActivity(repositories).filter((repository) => {
       if (
         text &&
         !`${repository.name} ${repository.path}`.toLowerCase().includes(text)
