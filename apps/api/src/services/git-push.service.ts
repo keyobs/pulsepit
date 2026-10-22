@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { createCommandEnvironment } from './command-environment.service.js';
 
 const execute = promisify(execFile);
 class PushTimeoutError extends Error {}
@@ -35,9 +36,7 @@ export async function pushRepositoryBranch(
       killSignal: 'SIGKILL',
       maxBuffer: 1024 * 1024,
       env: {
-        ...process.env,
-        GIT_TERMINAL_PROMPT: '0',
-        GCM_INTERACTIVE: 'Never',
+        ...createCommandEnvironment('git'),
         LC_ALL: 'C',
       },
     });

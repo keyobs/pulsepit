@@ -4,6 +4,7 @@ import type {
   DeploymentCommitComparison,
   DeploymentEnvironment,
 } from '@pulsepit/contracts';
+import { createCommandEnvironment } from './command-environment.service.js';
 import type { DeploymentObservation } from './deployment-metadata.service.js';
 
 const execute = promisify(execFile);
@@ -82,12 +83,10 @@ export async function compareDeploymentCommit(
         maxBuffer: 64 * 1024,
         encoding: 'utf8',
         env: {
-          ...process.env,
+          ...createCommandEnvironment('git'),
           GIT_NO_LAZY_FETCH: '1',
           GIT_NO_REPLACE_OBJECTS: '1',
           GIT_OPTIONAL_LOCKS: '0',
-          GIT_TERMINAL_PROMPT: '0',
-          GCM_INTERACTIVE: 'Never',
         },
       });
       return stdout.trim();

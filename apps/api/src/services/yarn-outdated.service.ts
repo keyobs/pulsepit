@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process';
 import { resolve } from 'node:path';
 import { promisify } from 'node:util';
+import { createCommandEnvironment } from './command-environment.service.js';
 import type { OutdatedDependency, OutdatedResult } from './outdated.service.js';
 
 const execute = promisify(execFile);
@@ -54,7 +55,7 @@ export async function getYarnOutdatedDependencies(
         maxBuffer: 1024 * 1024,
         encoding: 'utf8',
         env: {
-          ...process.env,
+          ...createCommandEnvironment('package-manager'),
           YARN_ENABLE_SCRIPTS: 'false',
           COREPACK_ENABLE_NETWORK: '0',
         },

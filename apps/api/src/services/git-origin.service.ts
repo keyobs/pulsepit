@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process';
 import { isAbsolute } from 'node:path';
 import { promisify } from 'node:util';
 import type { OriginRemote, OriginResponse } from '@pulsepit/contracts';
+import { createCommandEnvironment } from './command-environment.service.js';
 
 const execute = promisify(execFile);
 
@@ -80,6 +81,7 @@ export async function getOriginRemote(
       killSignal: 'SIGKILL',
       maxBuffer: 128 * 1024,
       encoding: 'utf8',
+      env: createCommandEnvironment('git'),
     });
     return { origin: describeOrigin(stdout), originError: null };
   } catch (error) {

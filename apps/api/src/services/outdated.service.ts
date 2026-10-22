@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import type { OutdatedDependency, OutdatedResponse } from '@pulsepit/contracts';
+import { createCommandEnvironment } from './command-environment.service.js';
 import { detectPackageManager } from './package-manager.service.js';
 import { getYarnOutdatedDependencies } from './yarn-outdated.service.js';
 
@@ -122,6 +123,7 @@ export async function getOutdatedDependencies(
       killSignal: 'SIGKILL',
       maxBuffer: 1024 * 1024,
       encoding: 'utf8',
+      env: createCommandEnvironment('package-manager'),
     });
     output = result.stdout;
   } catch (error) {

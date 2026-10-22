@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import type { RepositorySync } from '@pulsepit/contracts';
+import { createCommandEnvironment } from './command-environment.service.js';
 
 const execute = promisify(execFile);
 
@@ -12,11 +13,9 @@ async function readGit(repositoryPath: string, args: string[]) {
     maxBuffer: 64 * 1024,
     encoding: 'utf8',
     env: {
-      ...process.env,
+      ...createCommandEnvironment('git'),
       // Missing objects in partial clones must not trigger a network fetch.
       GIT_NO_LAZY_FETCH: '1',
-      GIT_TERMINAL_PROMPT: '0',
-      GCM_INTERACTIVE: 'Never',
     },
   });
   return stdout;

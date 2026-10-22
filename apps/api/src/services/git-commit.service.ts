@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { createCommandEnvironment } from './command-environment.service.js';
 
 const execute = promisify(execFile);
 
@@ -15,10 +16,8 @@ async function readCommitDate(
       maxBuffer: 1024,
       encoding: 'utf8',
       env: {
-        ...process.env,
+        ...createCommandEnvironment('git'),
         GIT_NO_LAZY_FETCH: '1',
-        GIT_TERMINAL_PROMPT: '0',
-        GCM_INTERACTIVE: 'Never',
       },
     });
     const timestamp = stdout.trim();
