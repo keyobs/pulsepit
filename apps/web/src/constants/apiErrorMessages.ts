@@ -12,6 +12,14 @@ export const API_ERROR_MESSAGES: Record<string, string> = {
     'La branche distante est en avance : faire un pull avant de pousser.',
   REMOTE_REJECTED: 'Le remote a refusé le push.',
   AUTHENTICATION_FAILED: 'Authentification refusée par le remote.',
+  DIRECT_PUSH_FORBIDDEN: 'Push direct interdit sur cette branche.',
+  INVALID_PUSH_POLICY: 'Politique de push invalide : push bloqué.',
+  CHECK_RUNNER_UNAVAILABLE:
+    'Des contrôles sont requis mais le serveur ne peut pas les exécuter.',
+  CHECK_CONTEXT_MISMATCH:
+    'Le contexte local ne permet pas de contrôler cette branche.',
+  CHECK_FAILED: 'Les contrôles requis ont échoué : aucun push lancé.',
+  GIT_STATE_UNAVAILABLE: "L'état Git est illisible : push impossible.",
   PUSH_FAILED: 'Le push a échoué.',
   BRANCHES_FAILED: 'Impossible de lister les branches locales.',
   PACKAGE_MANAGER:

@@ -7,6 +7,7 @@ export interface DropdownMenuItem {
   id: string;
   label: string;
   hint?: string;
+  disabled?: boolean;
 }
 
 interface DropdownMenuProps {
@@ -53,6 +54,7 @@ export const DropdownMenu = ({
             key={item.id}
             type="button"
             role="menuitem"
+            disabled={item.disabled}
             className="pp-dropdown-menu-item"
             onClick={() => {
               close();

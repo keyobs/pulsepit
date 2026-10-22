@@ -1,33 +1,31 @@
+import type { LocalBranch } from '@api/types';
 import { DropdownMenu } from '@components/dropdownMenu/DropdownMenu';
 import { PushIcon } from '@components/icons/PushIcon';
-import { useBranches } from '@hooks/useBranches';
-import { useEffect } from 'react';
+import { getPushAvailability } from './pushAvailability';
 
 interface PushBranchMenuProps {
-  path: string;
+  branches: LocalBranch[];
   disabled?: boolean;
   onPush: (branch: string) => void;
 }
 
 /** Menu pour pousser une branche locale autre que main et develop, qui ont déjà leur bouton. */
 export const PushBranchMenu = ({
-  path,
+  branches,
   disabled,
   onPush,
 }: PushBranchMenuProps) => {
-  const { data, run } = useBranches(path);
-
-  useEffect(() => {
-    void run();
-  }, [run]);
-
-  const items = (data?.branches ?? [])
+  const items = branches
     .filter((branch) => branch.name !== 'main' && branch.name !== 'develop')
-    .map((branch) => ({
-      id: branch.name,
-      label: branch.name,
-      hint: '→ origin',
-    }));
+    .map((branch) => {
+      const { canAttempt, reason } = getPushAvailability(branch);
+      return {
+        id: branch.name,
+        label: branch.name,
+        hint: reason ?? '→ origin',
+        disabled: !canAttempt,
+      };
+    });
 
   return (
     <DropdownMenu
