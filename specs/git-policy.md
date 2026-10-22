@@ -110,7 +110,44 @@ Pour migrer, préparer et valider le fichier puis retirer explicitement la copie
 nécessite un redémarrage de l'API. Le contenu du fichier du dépôt est ensuite
 relu à chaque demande, sans redémarrage.
 
-Le raccordement Pulsepit n'installe pas de hook. L'adaptateur `pre-push` reste
-l'étape suivante : il devra lire cette même déclaration, contrôler les références
-de destination fournies par Git sur stdin et conserver les contrôles du dépôt.
-L'inventaire Husky reste indépendant de cette déclaration.
+## Adaptateur pre-push
+
+`scripts/hooks/pulsepit-pre-push.mjs` fournit un adaptateur Node autonome,
+sans dépendance installée. Il doit être copié dans `.husky/pulsepit-pre-push.mjs`
+puis appelé depuis le hook :
+
+```sh
+#!/usr/bin/env sh
+exec node .husky/pulsepit-pre-push.mjs "$@"
+```
+
+Cet adaptateur reprend le flow d'izeetok : `lint:fix` lorsqu'il existe, puis
+`test:run` lorsqu'il existe. Un échec du lint bloque toujours ; un échec des tests
+bloque si la destination exige `test-run`, et reste consultatif sinon. Les
+identifiants reconnus sont `lint-fix` et `test-run`. Un contrôle obligatoire
+inconnu ou sans script correspondant bloque le push, sans lancer de commande
+contenue dans la déclaration. Le gestionnaire suit les lockfiles : pnpm, Yarn,
+Bun, sinon npm, comme le hook d'origine.
+
+Toutes les références reçues sur stdin sont examinées avant les contrôles : une
+seule destination interdite refuse l'opération entière. L'adaptateur prend en
+charge `origin` et les références sources nommées transmises par Git ; une autre
+remote ou une expression source non prise en charge est refusée. Les règles de
+branches visent les destinations `refs/heads/*`, indépendamment de HEAD.
+
+Pour des contrôles obligatoires, la source doit être la branche courante et son
+SHA courant, avec un working tree propre. Le contexte est revérifié après le
+lint et les tests, et le document de politique doit rester identique. Une
+modification produite par `lint:fix` reste dans le working tree pour être revue ;
+elle n'est ni commitée ni annulée automatiquement. Ces vérifications locales ne
+remplacent pas un environnement isolé ni les protections CI du serveur.
+
+Un fichier absent, invalide ou trop volumineux, un lien symbolique observé ou un
+contexte non pris en charge entraîne un refus. L'adaptateur n'exécute pas les
+scripts lors d'une simple lecture de politique par Pulsepit. Le backend conserve
+son refus `CHECK_RUNNER_UNAVAILABLE` pour les obligations de contrôles : installer
+un hook ne constitue pas une preuve utilisable par son futur exécuteur.
+
+La copie du helper et le hook sont versionnés avec la déclaration dans le dépôt
+cible. Si un outil de génération de hooks les remplace, leur intégration doit
+être conservée dans sa configuration ; Pulsepit ne réécrit pas les hooks au scan.
