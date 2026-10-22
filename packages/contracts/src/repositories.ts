@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { DeploymentEnvironmentConfig } from './deployments.js';
+import { RepositoryGitPolicy } from './git-policy.js';
 import { OriginRemote } from './origin.js';
 
 export const GitStatus = z.object({
@@ -54,6 +55,7 @@ export const Repository = z.object({
   path: z.string(),
   git: GitStatus.nullable(),
   gitError: z.string().nullable(),
+  gitPolicy: RepositoryGitPolicy,
   sync: RepositorySync.nullable(),
   developLastCommitAt: z.string().nullable(),
   lastActivityAt: z.string().nullable(),

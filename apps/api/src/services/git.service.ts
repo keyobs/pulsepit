@@ -9,7 +9,7 @@ export type { GitStatus, LocalBranch } from '@pulsepit/contracts';
 const execute = promisify(execFile);
 
 export type LocalBranchesResult =
-  | { branches: LocalBranch[]; error: null }
+  | { branches: Pick<LocalBranch, 'name' | 'isCurrent'>[]; error: null }
   | { code: 'BRANCHES_FAILED' | 'TIMEOUT'; error: string };
 
 export async function getLocalBranches(

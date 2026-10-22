@@ -52,11 +52,21 @@ test('list local branches for one configured repository', async (t) => {
       const before = await git('rev-parse', 'HEAD');
       const response = await app.inject({ method: 'GET', url: url() });
       assert.equal(response.statusCode, 200);
-      assert.deepEqual(response.json().branches, [
-        { name: 'develop', isCurrent: false },
-        { name: 'feature/example', isCurrent: false },
-        { name: 'main', isCurrent: true },
-      ]);
+      assert.deepEqual(
+        response
+          .json()
+          .branches.map(
+            ({ name, isCurrent }: { name: string; isCurrent: boolean }) => ({
+              name,
+              isCurrent,
+            }),
+          ),
+        [
+          { name: 'develop', isCurrent: false },
+          { name: 'feature/example', isCurrent: false },
+          { name: 'main', isCurrent: true },
+        ],
+      );
       assert.equal(await git('rev-parse', 'HEAD'), before);
       assert.equal(await git('symbolic-ref', '--short', 'HEAD'), 'main');
     },
@@ -83,7 +93,11 @@ test('list local branches for one configured repository', async (t) => {
     assert.deepEqual(
       response
         .json()
-        .branches.filter((branch: { isCurrent: boolean }) => branch.isCurrent),
+        .branches.filter((branch: { isCurrent: boolean }) => branch.isCurrent)
+        .map(({ name, isCurrent }: { name: string; isCurrent: boolean }) => ({
+          name,
+          isCurrent,
+        })),
       [{ name: 'preview', isCurrent: true }],
     );
   });

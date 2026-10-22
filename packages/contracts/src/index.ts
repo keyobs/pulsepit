@@ -15,6 +15,14 @@ export {
   PushResponse,
 } from './git-actions.js';
 export {
+  GitBranchPolicy,
+  GitCheckId,
+  PushAssessment,
+  PushPolicyCode,
+  PushPolicyReason,
+  RepositoryGitPolicy,
+} from './git-policy.js';
+export {
   GithubActionsRun,
   GithubActionsRunsResponse,
 } from './github-actions.js';

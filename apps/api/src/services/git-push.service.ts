@@ -1,6 +1,11 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import type { RepositoryGitPolicy } from '@pulsepit/contracts';
 import { createCommandEnvironment } from './command-environment.service.js';
+import {
+  assessBranchPush,
+  unconfiguredGitPolicy,
+} from './git-policy.service.js';
 
 const execute = promisify(execFile);
 class PushTimeoutError extends Error {}
@@ -10,6 +15,10 @@ export type GitPushResult =
   | {
       success: false;
       code:
+        | 'DIRECT_PUSH_FORBIDDEN'
+        | 'INVALID_PUSH_POLICY'
+        | 'CHECK_RUNNER_UNAVAILABLE'
+        | 'GIT_STATE_UNAVAILABLE'
         | 'INVALID_BRANCH'
         | 'BRANCH_NOT_FOUND'
         | 'REMOTE_NOT_FOUND'
@@ -25,8 +34,24 @@ export type GitPushResult =
 export async function pushRepositoryBranch(
   repositoryPath: string,
   branch: string,
+  policy: RepositoryGitPolicy = unconfiguredGitPolicy(),
 ): Promise<GitPushResult> {
   const deadline = Date.now() + 30_000;
+  let pushStarted = false;
+  function policyRefusal(gitAvailable = true): GitPushResult | null {
+    const { pushAssessment } = assessBranchPush(policy, branch, gitAvailable);
+    if (pushAssessment.canAttempt) return null;
+    const reason = pushAssessment.reasons[0];
+    switch (reason.code) {
+      case 'DIRECT_PUSH_FORBIDDEN':
+      case 'INVALID_PUSH_POLICY':
+      case 'CHECK_RUNNER_UNAVAILABLE':
+      case 'GIT_STATE_UNAVAILABLE':
+        return { success: false, code: reason.code, error: reason.message };
+      default:
+        throw new Error('Unexpected push policy refusal.');
+    }
+  }
   async function run(args: string[]) {
     const remaining = deadline - Date.now();
     if (remaining <= 0) throw new PushTimeoutError();
@@ -72,6 +97,9 @@ export async function pushRepositoryBranch(
       };
     }
 
+    const refusal = policyRefusal();
+    if (refusal) return refusal;
+
     try {
       await run(['remote', 'get-url', '--push', 'origin']);
     } catch (error) {
@@ -85,6 +113,7 @@ export async function pushRepositoryBranch(
 
     // An explicit refspec selects exactly one local and one remote branch.
     // Disable mirror and automatic tag pushes even if configured locally.
+    pushStarted = true;
     await run([
       '-c',
       'remote.origin.mirror=false',
@@ -106,6 +135,10 @@ export async function pushRepositoryBranch(
         code: 'TIMEOUT',
         error: 'Git push timed out after 30 seconds.',
       };
+    }
+    if (!pushStarted) {
+      const refusal = policyRefusal(false);
+      if (refusal) return refusal;
     }
     const failure = error as { stdout?: string; stderr?: string };
     const output = failure.stdout ?? '';

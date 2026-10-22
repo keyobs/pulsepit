@@ -80,7 +80,23 @@ describe('repositories api', () => {
     fetchMock.mockResolvedValue(
       jsonResponse({
         path: PATH,
-        branches: [{ name: 'main', isCurrent: true }],
+        branches: [
+          {
+            name: 'main',
+            isCurrent: true,
+            policy: { directPush: 'unknown', requiredChecks: null },
+            pushAssessment: {
+              state: 'unknown',
+              canAttempt: true,
+              reasons: [
+                {
+                  code: 'POLICY_UNCONFIGURED',
+                  message: 'No local push policy is configured.',
+                },
+              ],
+            },
+          },
+        ],
       }),
     );
     const result = await getBranches(PATH);

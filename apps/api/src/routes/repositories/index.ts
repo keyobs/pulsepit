@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import type { AppConfig } from '../../config.js';
+import type { RepositoryGitPolicies } from '../../services/git-policy.service.js';
 import type {
   RepositoryConfigurationErrors,
   RepositoryEnvironments,
@@ -17,6 +18,7 @@ export const repositoriesRoutes: FastifyPluginAsync<
     repositoryHosting: RepositoryUrls;
     repositoryEnvironments: RepositoryEnvironments;
     repositoryConfigurationErrors: RepositoryConfigurationErrors;
+    repositoryGitPolicies: RepositoryGitPolicies;
   }
 > = async (app, options) => {
   app.register(getHooksRoutes, { scanPaths: options.scanPaths });
@@ -38,8 +40,10 @@ export const repositoriesRoutes: FastifyPluginAsync<
     repositoryHosting: options.repositoryHosting,
     repositoryEnvironments: options.repositoryEnvironments,
     repositoryConfigurationErrors: options.repositoryConfigurationErrors,
+    repositoryGitPolicies: options.repositoryGitPolicies,
   });
   app.register(postRepositoriesRoutes, {
+    repositoryGitPolicies: options.repositoryGitPolicies,
     scanPaths: options.scanPaths,
     repositoryUrls: options.repositoryUrls,
   });

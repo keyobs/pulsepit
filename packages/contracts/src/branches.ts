@@ -1,8 +1,11 @@
 import { z } from 'zod';
+import { GitBranchPolicy, PushAssessment } from './git-policy.js';
 
 export const LocalBranch = z.object({
   name: z.string(),
   isCurrent: z.boolean(),
+  policy: GitBranchPolicy,
+  pushAssessment: PushAssessment,
 });
 
 export type LocalBranch = z.infer<typeof LocalBranch>;

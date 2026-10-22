@@ -12,6 +12,11 @@ import type { AppConfig } from '../../config.js';
 import { getLocalBranches } from '../../services/git.service.js';
 import { getOriginRemote } from '../../services/git-origin.service.js';
 import {
+  assessBranchPush,
+  type RepositoryGitPolicies,
+  repositoryGitPolicy,
+} from '../../services/git-policy.service.js';
+import {
   getPackageManifest,
   type PackageRef,
 } from '../../services/package.service.js';
@@ -36,12 +41,17 @@ export const getRepositoriesRoutes: FastifyPluginAsync<
     repositoryHosting: RepositoryUrls;
     repositoryEnvironments: RepositoryEnvironments;
     repositoryConfigurationErrors: RepositoryConfigurationErrors;
+    repositoryGitPolicies: RepositoryGitPolicies;
   }
 > = async (app, options) => {
   const withRepositoryConfiguration = async (
     repository: Repository,
   ): Promise<RepositoryResponse> => ({
     ...repository,
+    gitPolicy: repositoryGitPolicy(
+      repository.path,
+      options.repositoryGitPolicies,
+    ),
     beacon: await inspectRepositoryBeacon(
       repository.path,
       options.repositoryEnvironments[repository.path] ?? [],
@@ -190,7 +200,13 @@ export const getRepositoriesRoutes: FastifyPluginAsync<
       }
       return {
         path: repository.path,
-        branches: result.branches,
+        branches: result.branches.map((branch) => ({
+          ...branch,
+          ...assessBranchPush(
+            repositoryGitPolicy(repository.path, options.repositoryGitPolicies),
+            branch.name,
+          ),
+        })),
       } satisfies BranchesResponse;
     },
   );

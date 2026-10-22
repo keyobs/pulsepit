@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import type { AppConfig } from './config.js';
 import { healthRoutes } from './routes/health.routes.js';
 import { repositoriesRoutes } from './routes/repositories/index.js';
+import type { RepositoryGitPolicies } from './services/git-policy.service.js';
 import type {
   RepositoryConfigurationErrors,
   RepositoryEnvironments,
@@ -14,6 +15,7 @@ export function buildApp(
   repositoryHosting: RepositoryUrls = {},
   repositoryEnvironments: RepositoryEnvironments = {},
   repositoryConfigurationErrors: RepositoryConfigurationErrors = {},
+  repositoryGitPolicies: RepositoryGitPolicies = {},
 ) {
   const app = Fastify({ logger: true });
 
@@ -27,6 +29,7 @@ export function buildApp(
     repositoryHosting,
     repositoryEnvironments,
     repositoryConfigurationErrors,
+    repositoryGitPolicies,
   });
 
   return app;

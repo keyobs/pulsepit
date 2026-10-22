@@ -3,6 +3,11 @@ import { homedir } from 'node:os';
 import { isAbsolute, join, resolve } from 'node:path';
 import { DeploymentEnvironmentConfig } from '@pulsepit/contracts';
 
+import {
+  parseRepositoryGitPolicies,
+  type RepositoryGitPolicies,
+} from './git-policy.service.js';
+
 export type RepositoryUrls = Record<string, Record<string, string>>;
 export interface StaticMetadataSource {
   type: 'static';
@@ -32,6 +37,7 @@ export interface RepositoryDeploymentConfig {
   hosting: RepositoryUrls;
   environments: RepositoryEnvironments;
   errors?: RepositoryConfigurationErrors;
+  gitPolicies?: RepositoryGitPolicies;
 }
 
 export interface RepositoryConfigurationError {
@@ -83,6 +89,8 @@ export async function loadRepositoryDeploymentConfig(
     throw new Error('The repositories configuration must be an object.');
 
   const result = empty();
+  const gitPolicies = await parseRepositoryGitPolicies(data.repositories);
+  if (Object.keys(gitPolicies).length) result.gitPolicies = gitPolicies;
   const seen = new Set<string>();
   for (const [path, settings] of Object.entries(data.repositories)) {
     const normalizedPath = isAbsolute(path) ? resolve(path) : path;

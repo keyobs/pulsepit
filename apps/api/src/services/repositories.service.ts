@@ -18,7 +18,7 @@ import { detectPackageManager } from './package-manager.service.js';
 // Deployment links are added by the route after scanning local repositories.
 export type Repository = Omit<
   RepositoryContract,
-  'urls' | 'hosting' | 'deploymentEnvironments' | 'beacon'
+  'urls' | 'hosting' | 'deploymentEnvironments' | 'beacon' | 'gitPolicy'
 >;
 
 export type { ScanError } from '@pulsepit/contracts';

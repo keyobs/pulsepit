@@ -24,6 +24,7 @@ const app = buildApp(
   deploymentConfig.hosting,
   deploymentConfig.environments,
   deploymentConfig.errors,
+  deploymentConfig.gitPolicies,
 );
 
 for (const [path, error] of Object.entries(deploymentConfig.errors ?? {})) {
