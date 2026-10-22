@@ -50,8 +50,27 @@ function toApiError(status: number, body: unknown): ApiError {
   });
 }
 
+const inFlightGets = new Map<string, Promise<unknown>>();
+
 /** Appelle l'API, vérifie la réponse avec son schéma et convertit toute erreur en ApiError. */
-export async function apiRequest<T>(
+export function apiRequest<T>(
+  path: string,
+  options: RequestOptions<T>,
+): Promise<T> {
+  const { method = 'GET', query, signal } = options;
+  if (method !== 'GET' || signal) return sendRequest(path, options);
+  // Les GET sans signal identiques et simultanés partagent un seul appel.
+  const key = buildUrl(path, query);
+  const pending = inFlightGets.get(key);
+  if (pending) return pending as Promise<T>;
+  const request = sendRequest(path, options).finally(() =>
+    inFlightGets.delete(key),
+  );
+  inFlightGets.set(key, request);
+  return request;
+}
+
+async function sendRequest<T>(
   path: string,
   {
     schema,

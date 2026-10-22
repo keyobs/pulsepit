@@ -32,6 +32,17 @@ describe('apiRequest', () => {
     expect(fetchMock.mock.calls[0][1].method).toBe('GET');
   });
 
+  it('shares identical concurrent GET requests without a signal', async () => {
+    fetchMock.mockImplementation(async () => jsonResponse({ ok: true }));
+    await Promise.all([
+      apiRequest('/x', { schema, query: { a: 1 } }),
+      apiRequest('/x', { schema, query: { a: 1 } }),
+    ]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await apiRequest('/x', { schema, query: { a: 1 } });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it('sends a JSON body on POST', async () => {
     fetchMock.mockResolvedValue(jsonResponse({ ok: true }));
     await apiRequest('/repositories/fetch', {
