@@ -3,40 +3,17 @@ import { constants } from 'node:fs';
 import { access, lstat, open } from 'node:fs/promises';
 import { basename, dirname, isAbsolute, join } from 'node:path';
 import { promisify } from 'node:util';
+import type {
+  GitHook,
+  GitHookFile,
+  RepositoryHooksResponse,
+} from '@pulsepit/contracts';
 import { createCommandEnvironment } from './command-environment.service.js';
 
 const execute = promisify(execFile);
-const hookNames = ['pre-commit', 'commit-msg', 'pre-push'] as const;
+export type RepositoryHooks = Omit<RepositoryHooksResponse, 'path'>;
 
-interface HookFile {
-  path: string;
-  state:
-    | 'missing'
-    | 'executable'
-    | 'not_executable'
-    | 'unreadable'
-    | 'unsupported';
-}
-
-export interface RepositoryHooks {
-  directory: string | null;
-  source: 'default' | 'configured' | null;
-  directoryState:
-    | 'directory'
-    | 'missing'
-    | 'not_directory'
-    | 'unreadable'
-    | 'unsupported'
-    | null;
-  hooks: {
-    name: (typeof hookNames)[number];
-    file: HookFile;
-    husky: { loader: HookFile; script: HookFile } | null;
-  }[];
-  error: { code: 'HOOKS_READ_FAILED' | 'TIMEOUT'; message: string } | null;
-}
-
-async function inspectFile(path: string): Promise<HookFile> {
+async function inspectFile(path: string): Promise<GitHookFile> {
   try {
     if (!(await lstat(path)).isFile()) return { path, state: 'unsupported' };
     try {
@@ -62,7 +39,8 @@ async function inspectFile(path: string): Promise<HookFile> {
   }
 }
 
-async function isHuskyWrapper(file: HookFile): Promise<boolean> {
+async function isHuskyWrapper(file: GitHookFile): Promise<boolean> {
+  if (file.path === null) return false;
   if (!['executable', 'not_executable'].includes(file.state)) return false;
   const directory = dirname(file.path);
   if (basename(directory) !== '_' || basename(dirname(directory)) !== '.husky')
@@ -141,7 +119,7 @@ export async function inspectRepositoryHooks(
       if ((error as { code?: unknown }).code !== 1) throw error;
       source = 'default';
     }
-    let directoryState: RepositoryHooks['directoryState'];
+    let directoryState: NonNullable<RepositoryHooks['directoryState']>;
     try {
       const stat = await lstat(directory);
       directoryState = stat.isSymbolicLink()
@@ -155,10 +133,11 @@ export async function inspectRepositoryHooks(
           ? 'missing'
           : 'unreadable';
     }
-    const hooks: RepositoryHooks['hooks'] = [];
-    for (const name of hookNames) {
+    async function inspectHook<Name extends GitHook['name']>(
+      name: Name,
+    ): Promise<GitHook & { name: Name }> {
       const path = join(directory, name);
-      const file: HookFile =
+      const file: GitHookFile =
         directoryState === 'directory'
           ? await inspectFile(path)
           : {
@@ -175,8 +154,13 @@ export async function inspectRepositoryHooks(
             script: await inspectFile(join(dirname(directory), name)),
           }
         : null;
-      hooks.push({ name, file, husky });
+      return { name, file, husky };
     }
+    const hooks: RepositoryHooks['hooks'] = [
+      await inspectHook('pre-commit'),
+      await inspectHook('commit-msg'),
+      await inspectHook('pre-push'),
+    ];
     return { directory, source, directoryState, hooks, error: null };
   } catch (error) {
     const timedOut = (error as { signal?: string }).signal === 'SIGKILL';
@@ -184,7 +168,23 @@ export async function inspectRepositoryHooks(
       directory: null,
       source: null,
       directoryState: null,
-      hooks: [],
+      hooks: [
+        {
+          name: 'pre-commit',
+          file: { path: null, state: 'unsupported' },
+          husky: null,
+        },
+        {
+          name: 'commit-msg',
+          file: { path: null, state: 'unsupported' },
+          husky: null,
+        },
+        {
+          name: 'pre-push',
+          file: { path: null, state: 'unsupported' },
+          husky: null,
+        },
+      ],
       error: {
         code: timedOut ? 'TIMEOUT' : 'HOOKS_READ_FAILED',
         message: timedOut

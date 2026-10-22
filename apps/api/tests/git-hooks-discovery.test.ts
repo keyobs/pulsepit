@@ -200,7 +200,19 @@ test('unreadable Git repositories return sanitized uncertainty rather than claim
     assert.equal(result.directory, null);
     assert.equal(result.source, null);
     assert.equal(result.directoryState, null);
-    assert.deepEqual(result.hooks, []);
+    assert.deepEqual(
+      result.hooks.map(({ name, file, husky }) => [
+        name,
+        file.path,
+        file.state,
+        husky,
+      ]),
+      [
+        ['pre-commit', null, 'unsupported', null],
+        ['commit-msg', null, 'unsupported', null],
+        ['pre-push', null, 'unsupported', null],
+      ],
+    );
     assert.equal(JSON.stringify(result).includes(root), false);
   }
 });

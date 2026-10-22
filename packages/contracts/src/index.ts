@@ -18,6 +18,7 @@ export {
   GithubActionsRun,
   GithubActionsRunsResponse,
 } from './github-actions.js';
+export { GitHook, GitHookFile, RepositoryHooksResponse } from './hooks.js';
 export {
   DeploymentCheck,
   MonitoringRequest,

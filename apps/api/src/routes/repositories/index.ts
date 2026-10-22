@@ -7,6 +7,7 @@ import type {
 } from '../../services/repository-config.service.js';
 import { getDeploymentsRoutes } from './get-deployments.routes.js';
 import { getGithubActionsRoutes } from './get-github-actions.routes.js';
+import { getHooksRoutes } from './get-hooks.routes.js';
 import { getRepositoriesRoutes } from './get-repositories.routes.js';
 import { postRepositoriesRoutes } from './post-repositories.routes.js';
 
@@ -18,6 +19,7 @@ export const repositoriesRoutes: FastifyPluginAsync<
     repositoryConfigurationErrors: RepositoryConfigurationErrors;
   }
 > = async (app, options) => {
+  app.register(getHooksRoutes, { scanPaths: options.scanPaths });
   app.register(getDeploymentsRoutes, {
     scanPaths: options.scanPaths,
     githubToken: options.githubToken,
