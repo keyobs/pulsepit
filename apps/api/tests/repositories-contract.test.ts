@@ -48,6 +48,10 @@ test('repository list satisfies the shared contract with Git, package and deploy
   );
   await git('branch', 'develop');
   await git('remote', 'add', 'origin', 'git@github.com:zeebha/project.git');
+  const { stdout: commitTimestamp } = await git('log', '-1', '--format=%ct');
+  const lastActivityAt = new Date(
+    Number(commitTimestamp.trim()) * 1000,
+  ).toISOString();
 
   const response = await app.inject({
     method: 'GET',
@@ -67,6 +71,7 @@ test('repository list satisfies the shared contract with Git, package and deploy
     gitError: null,
     sync: { upstream: null, ahead: null, behind: null },
     developLastCommitAt: null,
+    lastActivityAt,
     versions: {
       head: { version: '1.2.3', error: null },
       main: { version: '1.2.3', error: null },
@@ -168,6 +173,7 @@ test('repository contract rejects incompatible mock formats and missing nullable
     gitError: null,
     sync: null,
     developLastCommitAt: null,
+    lastActivityAt: null,
     versions: {
       head: { version: null, error: null },
       main: { version: null, error: null },

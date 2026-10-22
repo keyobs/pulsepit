@@ -56,6 +56,7 @@ export const Repository = z.object({
   gitError: z.string().nullable(),
   sync: RepositorySync.nullable(),
   developLastCommitAt: z.string().nullable(),
+  lastActivityAt: z.string().nullable(),
   versions: PackageVersions,
   engines: z.record(z.string(), z.string()).nullable(),
   enginesError: z.string().nullable(),

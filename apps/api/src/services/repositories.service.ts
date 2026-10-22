@@ -6,7 +6,10 @@ import type {
   ScanError,
 } from '@pulsepit/contracts';
 import { getGitStatus } from './git.service.js';
-import { getDevelopLastCommitAt } from './git-commit.service.js';
+import {
+  getDevelopLastCommitAt,
+  getLastActivityAt,
+} from './git-commit.service.js';
 import { getOriginRemote } from './git-origin.service.js';
 import { getGitSync } from './git-sync.service.js';
 import { getPackageEngines, getPackageVersions } from './package.service.js';
@@ -102,6 +105,7 @@ async function inspectRepository(
     gitError,
     sync: git === null ? null : await getGitSync(path, git.branch),
     developLastCommitAt: await getDevelopLastCommitAt(path),
+    lastActivityAt: await getLastActivityAt(path),
     versions: await getPackageVersions(path),
     ...(await getPackageEngines(path)),
     packageManager: await detectPackageManager(path),
