@@ -22,6 +22,7 @@ export {
   PushPolicyReason,
   RepositoryGitPolicy,
 } from './git-policy.js';
+export { GitPolicyFile } from './git-policy-file.js';
 export {
   GithubActionsRun,
   GithubActionsRunsResponse,

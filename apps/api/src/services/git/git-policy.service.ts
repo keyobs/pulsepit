@@ -46,6 +46,18 @@ function onlyKeys(value: Record<string, unknown>, keys: string[]) {
     throw new Error('Unknown policy setting.');
 }
 
+export async function validateGitPolicyBranchName(
+  branch: string,
+): Promise<void> {
+  if (branch === 'HEAD' || branch.startsWith('-'))
+    throw new Error('Invalid branch name.');
+  await execute('git', ['check-ref-format', `refs/heads/${branch}`], {
+    timeout: 5000,
+    maxBuffer: 4096,
+    env: createCommandEnvironment('git'),
+  });
+}
+
 // Parse independently of deployment settings: quarantining a bad deployment
 // configuration must never discard a valid push prohibition.
 export async function parseRepositoryGitPolicies(
@@ -83,13 +95,7 @@ export async function parseRepositoryGitPolicies(
         throw new Error('Invalid branch rules.');
       const validated: Record<string, GitBranchPolicy> = Object.create(null);
       for (const [branch, rule] of Object.entries(branches)) {
-        if (branch === 'HEAD' || branch.startsWith('-'))
-          throw new Error('Invalid branch name.');
-        await execute('git', ['check-ref-format', `refs/heads/${branch}`], {
-          timeout: 5000,
-          maxBuffer: 4096,
-          env: createCommandEnvironment('git'),
-        });
+        await validateGitPolicyBranchName(branch);
         validated[branch] = GitBranchPolicy.strict().parse(rule);
       }
       policies[normalized] = {

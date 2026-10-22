@@ -55,3 +55,47 @@ avec le dépôt reste explicite. Les protections du serveur Git sont indépendan
 
 Après modification du fichier de configuration, redémarrer l'API puis actualiser
 les branches. Le fichier de configuration personnel reste hors du dépôt Git.
+
+## Déclaration partageable dans le dépôt : préparation
+
+Le format v1 proposé vit dans `.pulsepit/git-policy.json` :
+
+```json
+{
+  "version": 1,
+  "remote": "origin",
+  "default": {
+    "directPush": "unknown",
+    "requiredChecks": null
+  },
+  "branches": {
+    "main": { "directPush": "forbidden", "requiredChecks": [] },
+    "master": { "directPush": "forbidden", "requiredChecks": [] },
+    "develop": {
+      "directPush": "allowed",
+      "requiredChecks": ["lint-fix", "test-run"]
+    }
+  }
+}
+```
+
+Le schéma `GitPolicyFile` est exporté par `@pulsepit/contracts`. `version` et
+`remote` sont obligatoires ; l'absence de `default` signifie une règle inconnue,
+`branches` absent signifie une table vide. Chaque règle présente est complète.
+Les champs inconnus sont rejetés et aucune commande n'est acceptée dans ce
+fichier. Les contrôles restent des identifiants, pas des résultats.
+
+Le lecteur backend interne `readRepositoryGitPolicyFile` accepte uniquement ce
+chemin fixe, un fichier régulier de 64 Kio maximum et un contenu JSON UTF-8 valide.
+Il refuse les liens observés sur le fichier ou son dossier, vérifie les noms de
+branches via Git et ne lance aucun hook. Une erreur donne `INVALID_PUSH_POLICY`,
+sans contenu de fichier ni erreur système brute ; un fichier absent est distingué
+d'un fichier invalide. Chaque worktree lit sa propre déclaration.
+
+**État : préparé, pas encore raccordé aux routes ou aux hooks.** Le fichier ne
+remplace pas encore la configuration Pulsepit utilisée en production. La nouvelle
+provenance `repository-file` et la gestion de deux déclarations concurrentes sont
+proposées au front dans `CONVENTION.md` avant raccordement. Aucun hook existant
+n'est modifié automatiquement. L'adaptateur `pre-push` devra contrôler les
+références de destination fournies par Git sur stdin et conserver les contrôles
+du dépôt ; l'inventaire Husky reste indépendant de cette déclaration.
