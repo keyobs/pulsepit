@@ -11,7 +11,7 @@ import { readConfig } from '../src/config.js';
 import {
   getDeploymentDateSources,
   loadRepositoryDeploymentConfig,
-} from '../src/services/repository-config.service.js';
+} from '../src/services/repositories/repository-config.service.js';
 
 const git = promisify(execFile);
 const sha = 'b'.repeat(40);

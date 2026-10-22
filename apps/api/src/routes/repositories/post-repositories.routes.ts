@@ -11,16 +11,16 @@ import type {
 } from '@pulsepit/contracts';
 import type { FastifyPluginAsync } from 'fastify';
 import type { AppConfig } from '../../config.js';
-import { fetchRepository } from '../../services/git.service.js';
+import { checkDeploymentUrls } from '../../services/deployments/monitoring.service.js';
+import { fetchRepository } from '../../services/git/git.service.js';
 import {
   type RepositoryGitPolicies,
   repositoryGitPolicy,
-} from '../../services/git-policy.service.js';
-import { pushRepositoryBranch } from '../../services/git-push.service.js';
-import { checkDeploymentUrls } from '../../services/monitoring.service.js';
-import { getOutdatedDependencies } from '../../services/outdated.service.js';
-import { findConfiguredRepository } from '../../services/repositories.service.js';
-import type { RepositoryUrls } from '../../services/repository-config.service.js';
+} from '../../services/git/git-policy.service.js';
+import { pushRepositoryBranch } from '../../services/git/git-push.service.js';
+import { getOutdatedDependencies } from '../../services/packages/outdated.service.js';
+import { findConfiguredRepository } from '../../services/repositories/repositories.service.js';
+import type { RepositoryUrls } from '../../services/repositories/repository-config.service.js';
 
 export const postRepositoriesRoutes: FastifyPluginAsync<
   Pick<AppConfig, 'scanPaths'> & {

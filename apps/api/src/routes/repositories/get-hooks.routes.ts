@@ -4,8 +4,8 @@ import type {
 } from '@pulsepit/contracts';
 import type { FastifyPluginAsync } from 'fastify';
 import type { AppConfig } from '../../config.js';
-import { inspectRepositoryHooks } from '../../services/git-hooks.service.js';
-import { findConfiguredRepository } from '../../services/repositories.service.js';
+import { inspectRepositoryHooks } from '../../services/git/git-hooks.service.js';
+import { findConfiguredRepository } from '../../services/repositories/repositories.service.js';
 
 export const getHooksRoutes: FastifyPluginAsync<
   Pick<AppConfig, 'scanPaths'>

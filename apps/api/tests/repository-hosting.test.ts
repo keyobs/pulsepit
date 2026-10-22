@@ -9,7 +9,7 @@ import { buildApp } from '../src/app.js';
 import {
   loadRepositoryDeploymentConfig,
   loadRepositoryUrls,
-} from '../src/services/repository-config.service.js';
+} from '../src/services/repositories/repository-config.service.js';
 
 test('hosting console links by repository and environment', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'pulsepit-hosting-'));

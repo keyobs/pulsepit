@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { RepositoryBeacon } from '@pulsepit/contracts';
-import type { ConfiguredDeploymentEnvironment } from './repository-config.service.js';
+import type { ConfiguredDeploymentEnvironment } from '../repositories/repository-config.service.js';
 
 function object(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);

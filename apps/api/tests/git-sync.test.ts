@@ -7,7 +7,7 @@ import { type TestContext, test } from 'node:test';
 import { promisify } from 'node:util';
 import { ListRepositoriesResponse, RepositorySync } from '@pulsepit/contracts';
 import { buildApp } from '../src/app.js';
-import { getGitSync } from '../src/services/git-sync.service.js';
+import { getGitSync } from '../src/services/git/git-sync.service.js';
 
 const execute = promisify(execFile);
 const withoutUpstream = { upstream: null, ahead: null, behind: null };

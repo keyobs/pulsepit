@@ -9,7 +9,7 @@ import {
   MonitoringResponse,
 } from '@pulsepit/contracts';
 import { buildApp } from '../src/app.js';
-import type { RepositoryUrls } from '../src/services/repository-config.service.js';
+import type { RepositoryUrls } from '../src/services/repositories/repository-config.service.js';
 
 async function fixture(t: TestContext) {
   const root = await mkdtemp(join(tmpdir(), 'pulsepit-monitoring-contract-'));

@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process';
 import { isAbsolute } from 'node:path';
 import { promisify } from 'node:util';
 import type { OriginRemote, OriginResponse } from '@pulsepit/contracts';
-import { createCommandEnvironment } from './command-environment.service.js';
+import { createCommandEnvironment } from '../processes/command-environment.service.js';
 
 const execute = promisify(execFile);
 

@@ -7,7 +7,7 @@ import { type TestContext, test } from 'node:test';
 import { promisify } from 'node:util';
 import { ListRepositoriesResponse } from '@pulsepit/contracts';
 import { buildApp } from '../src/app.js';
-import { getDevelopLastCommitAt } from '../src/services/git-commit.service.js';
+import { getDevelopLastCommitAt } from '../src/services/git/git-commit.service.js';
 
 const execute = promisify(execFile);
 

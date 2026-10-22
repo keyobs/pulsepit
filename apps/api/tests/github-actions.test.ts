@@ -8,7 +8,7 @@ import { promisify } from 'node:util';
 import { ErrorResponse, GithubActionsRunsResponse } from '@pulsepit/contracts';
 import { buildApp } from '../src/app.js';
 import { readConfig } from '../src/config.js';
-import { getGithubActionsRuns } from '../src/services/github-actions.service.js';
+import { getGithubActionsRuns } from '../src/services/host-provider/github-actions.service.js';
 
 const execute = promisify(execFile);
 const identity = {

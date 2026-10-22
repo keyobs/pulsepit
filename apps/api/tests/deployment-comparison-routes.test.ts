@@ -11,7 +11,7 @@ import {
   DeploymentsResponse,
 } from '@pulsepit/contracts';
 import { buildApp } from '../src/app.js';
-import { loadRepositoryDeploymentConfig } from '../src/services/repository-config.service.js';
+import { loadRepositoryDeploymentConfig } from '../src/services/repositories/repository-config.service.js';
 
 const execute = promisify(execFile);
 

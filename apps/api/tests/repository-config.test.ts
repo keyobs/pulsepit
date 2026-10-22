@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import { promisify } from 'node:util';
 import { buildApp } from '../src/app.js';
 import { readConfig } from '../src/config.js';
-import { loadRepositoryUrls } from '../src/services/repository-config.service.js';
+import { loadRepositoryUrls } from '../src/services/repositories/repository-config.service.js';
 
 test('repository URL configuration', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'pulsepit-url-config-'));

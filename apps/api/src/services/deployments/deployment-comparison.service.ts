@@ -4,8 +4,8 @@ import type {
   DeploymentCommitComparison,
   DeploymentEnvironment,
 } from '@pulsepit/contracts';
-import { createCommandEnvironment } from './command-environment.service.js';
-import type { DeploymentObservation } from './deployment-metadata.service.js';
+import type { DeploymentObservation } from '../beacon/deployment-metadata.service.js';
+import { createCommandEnvironment } from '../processes/command-environment.service.js';
 
 const execute = promisify(execFile);
 const fullSha = /^(?:[a-f\d]{40}|[a-f\d]{64})$/i;

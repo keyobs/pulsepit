@@ -3,7 +3,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { type TestContext, test } from 'node:test';
-import { hasConfiguredBeacon } from '../src/services/repository-beacon.service.js';
+import { hasConfiguredBeacon } from '../src/services/beacon/repository-beacon.service.js';
 
 const name = '@keyobs/pulsepit-beacon';
 

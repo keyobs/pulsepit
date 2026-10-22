@@ -5,22 +5,22 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { type TestContext, test } from 'node:test';
 import { promisify } from 'node:util';
-import { createCommandEnvironment } from '../src/services/command-environment.service.js';
-import { compareDeploymentCommit } from '../src/services/deployment-comparison.service.js';
+import { compareDeploymentCommit } from '../src/services/deployments/deployment-comparison.service.js';
 import {
   fetchRepository,
   getGitStatus,
   getLocalBranches,
-} from '../src/services/git.service.js';
+} from '../src/services/git/git.service.js';
 import {
   getDevelopLastCommitAt,
   getLastActivityAt,
-} from '../src/services/git-commit.service.js';
-import { getOriginRemote } from '../src/services/git-origin.service.js';
-import { pushRepositoryBranch } from '../src/services/git-push.service.js';
-import { getGitSync } from '../src/services/git-sync.service.js';
-import { getOutdatedDependencies } from '../src/services/outdated.service.js';
-import { getPackageManifest } from '../src/services/package.service.js';
+} from '../src/services/git/git-commit.service.js';
+import { getOriginRemote } from '../src/services/git/git-origin.service.js';
+import { pushRepositoryBranch } from '../src/services/git/git-push.service.js';
+import { getGitSync } from '../src/services/git/git-sync.service.js';
+import { getOutdatedDependencies } from '../src/services/packages/outdated.service.js';
+import { getPackageManifest } from '../src/services/packages/package.service.js';
+import { createCommandEnvironment } from '../src/services/processes/command-environment.service.js';
 
 const execute = promisify(execFile);
 

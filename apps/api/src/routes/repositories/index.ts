@@ -1,11 +1,11 @@
 import type { FastifyPluginAsync } from 'fastify';
 import type { AppConfig } from '../../config.js';
-import type { RepositoryGitPolicies } from '../../services/git-policy.service.js';
+import type { RepositoryGitPolicies } from '../../services/git/git-policy.service.js';
 import type {
   RepositoryConfigurationErrors,
   RepositoryEnvironments,
   RepositoryUrls,
-} from '../../services/repository-config.service.js';
+} from '../../services/repositories/repository-config.service.js';
 import { getDeploymentsRoutes } from './get-deployments.routes.js';
 import { getGithubActionsRoutes } from './get-github-actions.routes.js';
 import { getHooksRoutes } from './get-hooks.routes.js';

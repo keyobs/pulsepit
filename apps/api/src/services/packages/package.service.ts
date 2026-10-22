@@ -5,7 +5,7 @@ import type {
   PackageVersion,
   PackageVersions,
 } from '@pulsepit/contracts';
-import { createGitClient } from './git-client.service.js';
+import { createGitClient } from '../git/git-client.service.js';
 
 export type { PackageVersion, PackageVersions } from '@pulsepit/contracts';
 

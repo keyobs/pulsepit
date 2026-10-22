@@ -3,14 +3,14 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { type TestContext, test } from 'node:test';
-import { collectDeploymentMetadata } from '../src/services/deployment-metadata.service.js';
-import { inspectRepositoryBeacon } from '../src/services/repository-beacon.service.js';
+import { collectDeploymentMetadata } from '../src/services/beacon/deployment-metadata.service.js';
+import { inspectRepositoryBeacon } from '../src/services/beacon/repository-beacon.service.js';
 import {
   getDeploymentDateSources,
   getDeploymentEnvironments,
   getDeploymentMetadataSources,
   loadRepositoryDeploymentConfig,
-} from '../src/services/repository-config.service.js';
+} from '../src/services/repositories/repository-config.service.js';
 
 const source = {
   type: 'static' as const,

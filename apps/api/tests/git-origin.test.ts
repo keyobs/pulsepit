@@ -9,7 +9,7 @@ import { buildApp } from '../src/app.js';
 import {
   describeOrigin,
   getOriginRemote,
-} from '../src/services/git-origin.service.js';
+} from '../src/services/git/git-origin.service.js';
 
 const execute = promisify(execFile);
 

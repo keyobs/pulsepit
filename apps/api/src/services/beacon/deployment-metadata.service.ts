@@ -3,7 +3,7 @@ import {
   type DeploymentEnvironmentConfig,
   type DeploymentMetadataError,
 } from '@pulsepit/contracts';
-import type { StaticMetadataSource } from './repository-config.service.js';
+import type { StaticMetadataSource } from '../repositories/repository-config.service.js';
 
 const maxBytes = 64 * 1024;
 const observationSchema = DeploymentEnvironment.omit({ comparison: true });

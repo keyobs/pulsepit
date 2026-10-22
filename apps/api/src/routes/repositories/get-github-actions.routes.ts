@@ -4,9 +4,9 @@ import type {
 } from '@pulsepit/contracts';
 import type { FastifyPluginAsync } from 'fastify';
 import type { AppConfig } from '../../config.js';
-import { getOriginRemote } from '../../services/git-origin.service.js';
-import { getGithubActionsRuns } from '../../services/github-actions.service.js';
-import { findConfiguredRepository } from '../../services/repositories.service.js';
+import { getOriginRemote } from '../../services/git/git-origin.service.js';
+import { getGithubActionsRuns } from '../../services/host-provider/github-actions.service.js';
+import { findConfiguredRepository } from '../../services/repositories/repositories.service.js';
 
 export const getGithubActionsRoutes: FastifyPluginAsync<
   Pick<AppConfig, 'scanPaths' | 'githubToken'>

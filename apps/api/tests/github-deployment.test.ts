@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { stringify } from 'yaml';
 import { buildApp } from '../src/app.js';
-import { parseGithubWorkflow } from '../src/services/github-workflow.service.js';
+import { parseGithubWorkflow } from '../src/services/workflows/github-workflow.service.js';
 
 const file = '.github/workflows/deploy.yml';
 function analyze(jobs: Record<string, unknown>) {

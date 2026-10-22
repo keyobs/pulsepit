@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import type { OutdatedDependency, OutdatedResponse } from '@pulsepit/contracts';
-import { createCommandEnvironment } from './command-environment.service.js';
+import { createCommandEnvironment } from '../processes/command-environment.service.js';
 import { detectPackageManager } from './package-manager.service.js';
 import { getYarnOutdatedDependencies } from './yarn-outdated.service.js';
 

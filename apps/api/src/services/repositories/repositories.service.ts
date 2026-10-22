@@ -5,15 +5,18 @@ import type {
   Repository as RepositoryContract,
   ScanError,
 } from '@pulsepit/contracts';
-import { getGitStatus } from './git.service.js';
+import { getGitStatus } from '../git/git.service.js';
 import {
   getDevelopLastCommitAt,
   getLastActivityAt,
-} from './git-commit.service.js';
-import { getOriginRemote } from './git-origin.service.js';
-import { getGitSync } from './git-sync.service.js';
-import { getPackageEngines, getPackageVersions } from './package.service.js';
-import { detectPackageManager } from './package-manager.service.js';
+} from '../git/git-commit.service.js';
+import { getOriginRemote } from '../git/git-origin.service.js';
+import { getGitSync } from '../git/git-sync.service.js';
+import {
+  getPackageEngines,
+  getPackageVersions,
+} from '../packages/package.service.js';
+import { detectPackageManager } from '../packages/package-manager.service.js';
 
 // Deployment links are added by the route after scanning local repositories.
 export type Repository = Omit<

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { getVercelDeploymentDate } from '../src/services/vercel-deployment.service.js';
+import { getVercelDeploymentDate } from '../src/services/host-provider/vercel-deployment.service.js';
 
 const sha = 'a'.repeat(40);
 const ready = Date.parse('2026-10-21T13:00:36Z');

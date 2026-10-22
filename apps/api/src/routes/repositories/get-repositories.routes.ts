@@ -9,31 +9,31 @@ import type {
 } from '@pulsepit/contracts';
 import type { FastifyPluginAsync } from 'fastify';
 import type { AppConfig } from '../../config.js';
-import { getLocalBranches } from '../../services/git.service.js';
-import { getOriginRemote } from '../../services/git-origin.service.js';
+import { inspectRepositoryBeacon } from '../../services/beacon/repository-beacon.service.js';
+import { getLocalBranches } from '../../services/git/git.service.js';
+import { getOriginRemote } from '../../services/git/git-origin.service.js';
 import {
   assessBranchPush,
   type RepositoryGitPolicies,
   repositoryGitPolicy,
-} from '../../services/git-policy.service.js';
+} from '../../services/git/git-policy.service.js';
 import {
   getPackageManifest,
   type PackageRef,
-} from '../../services/package.service.js';
+} from '../../services/packages/package.service.js';
 import {
   findConfiguredRepository,
   findRepositories,
   getRepositoryDetails,
   type Repository,
-} from '../../services/repositories.service.js';
-import { inspectRepositoryBeacon } from '../../services/repository-beacon.service.js';
+} from '../../services/repositories/repositories.service.js';
 import {
   getDeploymentEnvironments,
   type RepositoryConfigurationErrors,
   type RepositoryEnvironments,
   type RepositoryUrls,
-} from '../../services/repository-config.service.js';
-import { getRepositoryWorkflows } from '../../services/workflows.service.js';
+} from '../../services/repositories/repository-config.service.js';
+import { getRepositoryWorkflows } from '../../services/workflows/workflows.service.js';
 
 export const getRepositoriesRoutes: FastifyPluginAsync<
   Pick<AppConfig, 'scanPaths'> & {

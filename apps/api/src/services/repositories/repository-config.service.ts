@@ -6,7 +6,7 @@ import { DeploymentEnvironmentConfig } from '@pulsepit/contracts';
 import {
   parseRepositoryGitPolicies,
   type RepositoryGitPolicies,
-} from './git-policy.service.js';
+} from '../git/git-policy.service.js';
 
 export type RepositoryUrls = Record<string, Record<string, string>>;
 export interface StaticMetadataSource {

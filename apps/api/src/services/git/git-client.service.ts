@@ -1,5 +1,5 @@
 import { simpleGit } from 'simple-git';
-import { createCommandEnvironment } from './command-environment.service.js';
+import { createCommandEnvironment } from '../processes/command-environment.service.js';
 
 export function createGitClient(repositoryPath: string) {
   const environment = createCommandEnvironment('git');

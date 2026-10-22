@@ -8,7 +8,7 @@ import type {
   GitHookFile,
   RepositoryHooksResponse,
 } from '@pulsepit/contracts';
-import { createCommandEnvironment } from './command-environment.service.js';
+import { createCommandEnvironment } from '../processes/command-environment.service.js';
 
 const execute = promisify(execFile);
 export type RepositoryHooks = Omit<RepositoryHooksResponse, 'path'>;

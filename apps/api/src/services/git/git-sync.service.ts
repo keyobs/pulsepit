@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import type { RepositorySync } from '@pulsepit/contracts';
-import { createCommandEnvironment } from './command-environment.service.js';
+import { createCommandEnvironment } from '../processes/command-environment.service.js';
 
 const execute = promisify(execFile);
 

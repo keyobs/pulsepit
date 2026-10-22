@@ -11,7 +11,7 @@ import {
   PackageResponse,
 } from '@pulsepit/contracts';
 import { buildApp } from '../src/app.js';
-import { findConfiguredRepository } from '../src/services/repositories.service.js';
+import { findConfiguredRepository } from '../src/services/repositories/repositories.service.js';
 
 const execute = promisify(execFile);
 

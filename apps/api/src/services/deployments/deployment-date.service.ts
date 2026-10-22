@@ -1,9 +1,9 @@
-import type { AppConfig } from '../config.js';
-import type { DeploymentObservation } from './deployment-metadata.service.js';
-import { getOriginRemote } from './git-origin.service.js';
-import { getGithubPagesDeploymentDate } from './github-pages-deployment.service.js';
-import type { DeploymentDateSource } from './repository-config.service.js';
-import { getVercelDeploymentDate } from './vercel-deployment.service.js';
+import type { AppConfig } from '../../config.js';
+import type { DeploymentObservation } from '../beacon/deployment-metadata.service.js';
+import { getOriginRemote } from '../git/git-origin.service.js';
+import { getGithubPagesDeploymentDate } from '../host-provider/github-pages-deployment.service.js';
+import { getVercelDeploymentDate } from '../host-provider/vercel-deployment.service.js';
+import type { DeploymentDateSource } from '../repositories/repository-config.service.js';
 
 export async function collectDeploymentDates(
   path: string,

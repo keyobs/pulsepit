@@ -2,7 +2,7 @@ import { loadEnvFile } from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { buildApp } from './app.js';
 import { readConfig } from './config.js';
-import { loadRepositoryDeploymentConfig } from './services/repository-config.service.js';
+import { loadRepositoryDeploymentConfig } from './services/repositories/repository-config.service.js';
 
 // Resolve from this file so development and compiled startup use the same .env.
 const envPath = fileURLToPath(new URL('../../../.env', import.meta.url));

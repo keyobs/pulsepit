@@ -7,12 +7,12 @@ import { type TestContext, test } from 'node:test';
 import { promisify } from 'node:util';
 import { DeploymentsResponse } from '@pulsepit/contracts';
 import { buildApp } from '../src/app.js';
-import { collectDeploymentDates } from '../src/services/deployment-date.service.js';
-import type { DeploymentObservation } from '../src/services/deployment-metadata.service.js';
+import type { DeploymentObservation } from '../src/services/beacon/deployment-metadata.service.js';
+import { collectDeploymentDates } from '../src/services/deployments/deployment-date.service.js';
 import {
   getDeploymentDateSources,
   loadRepositoryDeploymentConfig,
-} from '../src/services/repository-config.service.js';
+} from '../src/services/repositories/repository-config.service.js';
 
 const git = promisify(execFile);
 const sha = 'a'.repeat(40);

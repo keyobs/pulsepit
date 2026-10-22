@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { buildApp } from '../src/app.js';
-import { checkDeploymentUrls } from '../src/services/monitoring.service.js';
+import { checkDeploymentUrls } from '../src/services/deployments/monitoring.service.js';
 
 test('on-demand deployment monitoring', async (t) => {
   const requests: string[] = [];

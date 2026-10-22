@@ -2,7 +2,7 @@ import {
   DeploymentEnvironment,
   type DeploymentMetadataError,
 } from '@pulsepit/contracts';
-import type { GithubRepositoryIdentity } from './git-origin.service.js';
+import type { GithubRepositoryIdentity } from '../git/git-origin.service.js';
 
 interface PagesDeploymentOptions {
   commit: string | null;

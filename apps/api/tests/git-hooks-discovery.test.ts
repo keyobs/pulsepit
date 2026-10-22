@@ -12,7 +12,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { type TestContext, test } from 'node:test';
 import { promisify } from 'node:util';
-import { inspectRepositoryHooks } from '../src/services/git-hooks.service.js';
+import { inspectRepositoryHooks } from '../src/services/git/git-hooks.service.js';
 
 const execute = promisify(execFile);
 

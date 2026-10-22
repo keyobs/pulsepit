@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { getGithubPagesDeploymentDate } from '../src/services/github-pages-deployment.service.js';
+import { getGithubPagesDeploymentDate } from '../src/services/host-provider/github-pages-deployment.service.js';
 
 const repository = {
   owner: 'keyobs',

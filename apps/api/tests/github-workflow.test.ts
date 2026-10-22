@@ -7,7 +7,7 @@ import { buildApp } from '../src/app.js';
 import {
   analyzeGithubWorkflow,
   parseGithubWorkflow,
-} from '../src/services/github-workflow.service.js';
+} from '../src/services/workflows/github-workflow.service.js';
 
 const jobs =
   '\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo ok\n';

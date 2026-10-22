@@ -6,8 +6,8 @@ import { join } from 'node:path';
 import { type TestContext, test } from 'node:test';
 import { promisify } from 'node:util';
 import { buildApp } from '../src/app.js';
-import { getGitStatus } from '../src/services/git.service.js';
-import { getPackageManifest } from '../src/services/package.service.js';
+import { getGitStatus } from '../src/services/git/git.service.js';
+import { getPackageManifest } from '../src/services/packages/package.service.js';
 
 const execute = promisify(execFile);
 

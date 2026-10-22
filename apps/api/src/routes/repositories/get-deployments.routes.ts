@@ -1,17 +1,17 @@
 import type { DeploymentsResponse, ErrorResponse } from '@pulsepit/contracts';
 import type { FastifyPluginAsync } from 'fastify';
 import type { AppConfig } from '../../config.js';
-import { collectDeploymentComparisons } from '../../services/deployment-comparison.service.js';
-import { collectDeploymentDates } from '../../services/deployment-date.service.js';
-import { collectDeploymentMetadata } from '../../services/deployment-metadata.service.js';
-import { findConfiguredRepository } from '../../services/repositories.service.js';
+import { collectDeploymentMetadata } from '../../services/beacon/deployment-metadata.service.js';
+import { collectDeploymentComparisons } from '../../services/deployments/deployment-comparison.service.js';
+import { collectDeploymentDates } from '../../services/deployments/deployment-date.service.js';
+import { findConfiguredRepository } from '../../services/repositories/repositories.service.js';
 import {
   getDeploymentDateSources,
   getDeploymentEnvironments,
   getDeploymentMetadataSources,
   type RepositoryEnvironments,
   type RepositoryUrls,
-} from '../../services/repository-config.service.js';
+} from '../../services/repositories/repository-config.service.js';
 
 export const getDeploymentsRoutes: FastifyPluginAsync<
   Pick<AppConfig, 'scanPaths' | 'githubToken' | 'vercelToken'> & {

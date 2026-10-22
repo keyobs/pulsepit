@@ -7,7 +7,7 @@ import {
   type PushPolicyReason,
   type RepositoryGitPolicy,
 } from '@pulsepit/contracts';
-import { createCommandEnvironment } from './command-environment.service.js';
+import { createCommandEnvironment } from '../processes/command-environment.service.js';
 
 const execute = promisify(execFile);
 export type RepositoryGitPolicies = Record<string, RepositoryGitPolicy>;

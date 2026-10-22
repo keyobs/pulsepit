@@ -20,8 +20,8 @@ import {
   assessBranchPush,
   parseRepositoryGitPolicies,
   unconfiguredGitPolicy,
-} from '../src/services/git-policy.service.js';
-import { loadRepositoryDeploymentConfig } from '../src/services/repository-config.service.js';
+} from '../src/services/git/git-policy.service.js';
+import { loadRepositoryDeploymentConfig } from '../src/services/repositories/repository-config.service.js';
 
 const execute = promisify(execFile);
 const rule = (

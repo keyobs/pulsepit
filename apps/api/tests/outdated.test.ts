@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { promisify } from 'node:util';
 import { buildApp } from '../src/app.js';
-import { getOutdatedDependencies } from '../src/services/outdated.service.js';
+import { getOutdatedDependencies } from '../src/services/packages/outdated.service.js';
 
 test('on-demand dependency diagnostics', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'pulsepit-outdated-'));

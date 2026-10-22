@@ -16,7 +16,7 @@ import { promisify } from 'node:util';
 import {
   compareDeploymentCommit,
   type DeploymentCommitComparison,
-} from '../src/services/deployment-comparison.service.js';
+} from '../src/services/deployments/deployment-comparison.service.js';
 
 const execute = promisify(execFile);
 

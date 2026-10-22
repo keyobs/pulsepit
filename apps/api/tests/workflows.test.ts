@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { buildApp } from '../src/app.js';
-import { findWorkflowFiles } from '../src/services/workflows.service.js';
+import { findWorkflowFiles } from '../src/services/workflows/workflows.service.js';
 
 test('discover workflow files on disk', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'pulsepit-workflows-'));

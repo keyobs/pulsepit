@@ -9,12 +9,12 @@ import {
   ListRepositoriesResponse,
 } from '@pulsepit/contracts';
 import { buildApp } from '../src/app.js';
-import { collectDeploymentMetadata } from '../src/services/deployment-metadata.service.js';
+import { collectDeploymentMetadata } from '../src/services/beacon/deployment-metadata.service.js';
 import {
   getDeploymentMetadataSources,
   loadRepositoryDeploymentConfig,
   type StaticMetadataSource,
-} from '../src/services/repository-config.service.js';
+} from '../src/services/repositories/repository-config.service.js';
 
 const definition = (environment: string, source = true) => ({
   label: environment === 'production' ? 'Production' : 'Test',

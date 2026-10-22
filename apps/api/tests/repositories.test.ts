@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { buildApp } from '../src/app.js';
-import { findConfiguredRepository } from '../src/services/repositories.service.js';
+import { findConfiguredRepository } from '../src/services/repositories/repositories.service.js';
 
 test('configured repository lookup without enriched scanning', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'pulsepit-lookup-'));
