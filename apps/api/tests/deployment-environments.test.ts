@@ -183,6 +183,17 @@ test('deployment route, repository list and detail expose the same local configu
       deploymentSource: null,
       metadataCheckedAt: null,
       metadataError: null,
+      comparison: {
+        reference: entry.branch === null ? null : `refs/heads/${entry.branch}`,
+        referenceCommit: null,
+        status: 'unknown',
+        ahead: null,
+        behind: null,
+        reason:
+          entry.branch === null
+            ? 'BRANCH_NOT_CONFIGURED'
+            : 'COMMIT_UNAVAILABLE',
+      },
     })),
   );
   const list = ListRepositoriesResponse.parse(

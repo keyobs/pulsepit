@@ -1,5 +1,5 @@
-import type { DeploymentEnvironment } from '@pulsepit/contracts';
 import type { AppConfig } from '../config.js';
+import type { DeploymentObservation } from './deployment-metadata.service.js';
 import { getOriginRemote } from './git-origin.service.js';
 import { getGithubPagesDeploymentDate } from './github-pages-deployment.service.js';
 import type { DeploymentDateSource } from './repository-config.service.js';
@@ -7,10 +7,10 @@ import { getVercelDeploymentDate } from './vercel-deployment.service.js';
 
 export async function collectDeploymentDates(
   path: string,
-  environments: DeploymentEnvironment[],
+  environments: DeploymentObservation[],
   sources: Record<string, DeploymentDateSource>,
   credentials: Pick<AppConfig, 'githubToken' | 'vercelToken'> = {},
-): Promise<DeploymentEnvironment[]> {
+): Promise<DeploymentObservation[]> {
   const eligible = environments.flatMap((entry, index) =>
     entry.metadataError === null &&
     entry.deployedAt === null &&

@@ -1,5 +1,6 @@
 export { BranchesResponse, LocalBranch } from './branches.js';
 export {
+  DeploymentCommitComparison,
   DeploymentEnvironment,
   DeploymentEnvironmentConfig,
   DeploymentHosting,

@@ -5,12 +5,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { type TestContext, test } from 'node:test';
 import { promisify } from 'node:util';
-import {
-  type DeploymentEnvironment,
-  DeploymentsResponse,
-} from '@pulsepit/contracts';
+import { DeploymentsResponse } from '@pulsepit/contracts';
 import { buildApp } from '../src/app.js';
 import { collectDeploymentDates } from '../src/services/deployment-date.service.js';
+import type { DeploymentObservation } from '../src/services/deployment-metadata.service.js';
 import {
   getDeploymentDateSources,
   loadRepositoryDeploymentConfig,
@@ -293,7 +291,7 @@ test('a missing match is a successful unknown date and non-GitHub origins produc
 
 test('date enrichment limits provider concurrency to four and preserves card order', async (t) => {
   const { path } = await fixture(t);
-  const entries: DeploymentEnvironment[] = Array.from(
+  const entries: DeploymentObservation[] = Array.from(
     { length: 7 },
     (_, i) => ({
       environment: `env${i}`,

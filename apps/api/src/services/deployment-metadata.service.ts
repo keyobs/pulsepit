@@ -6,6 +6,8 @@ import {
 import type { StaticMetadataSource } from './repository-config.service.js';
 
 const maxBytes = 64 * 1024;
+const observationSchema = DeploymentEnvironment.omit({ comparison: true });
+export type DeploymentObservation = Omit<DeploymentEnvironment, 'comparison'>;
 type MetadataErrorCode =
   | 'HTTP_ERROR'
   | 'TIMEOUT'
@@ -72,8 +74,8 @@ async function readDocument(response: Response): Promise<unknown> {
 
 function parseDocument(
   body: unknown,
-  base: DeploymentEnvironment,
-): DeploymentEnvironment {
+  base: DeploymentObservation,
+): DeploymentObservation {
   if (!isObject(body) || !Number.isInteger(body.protocolVersion)) invalid();
   if (body.protocolVersion !== 1) {
     throw new MetadataError(
@@ -104,7 +106,7 @@ function parseDocument(
       !/^(?:[a-f\d]{40}|[a-f\d]{64})$/i.test(app.commit))
   )
     invalid();
-  const parsed = DeploymentEnvironment.safeParse({
+  const parsed = observationSchema.safeParse({
     ...base,
     version: app.version,
     commit: app.commit,
@@ -125,8 +127,8 @@ async function collectEnvironment(
   environment: DeploymentEnvironmentConfig,
   source: StaticMetadataSource | undefined,
   timeoutMs: number,
-): Promise<DeploymentEnvironment> {
-  const base: DeploymentEnvironment = {
+): Promise<DeploymentObservation> {
+  const base: DeploymentObservation = {
     ...environment,
     version: null,
     commit: null,
@@ -180,8 +182,8 @@ export async function collectDeploymentMetadata(
   environments: DeploymentEnvironmentConfig[],
   sources: Record<string, StaticMetadataSource>,
   timeoutMs = 5_000,
-): Promise<DeploymentEnvironment[]> {
-  const results: DeploymentEnvironment[] = new Array(environments.length);
+): Promise<DeploymentObservation[]> {
+  const results: DeploymentObservation[] = new Array(environments.length);
   let next = 0;
   await Promise.all(
     Array.from({ length: Math.min(4, environments.length) }, async () => {

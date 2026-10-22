@@ -1,6 +1,7 @@
 import type { DeploymentsResponse, ErrorResponse } from '@pulsepit/contracts';
 import type { FastifyPluginAsync } from 'fastify';
 import type { AppConfig } from '../../config.js';
+import { collectDeploymentComparisons } from '../../services/deployment-comparison.service.js';
 import { collectDeploymentDates } from '../../services/deployment-date.service.js';
 import { collectDeploymentMetadata } from '../../services/deployment-metadata.service.js';
 import { findConfiguredRepository } from '../../services/repositories.service.js';
@@ -55,19 +56,23 @@ export const getDeploymentsRoutes: FastifyPluginAsync<
           options.repositoryEnvironments,
         ),
       );
+      const dated = await collectDeploymentDates(
+        repository.path,
+        metadata,
+        getDeploymentDateSources(
+          repository.path,
+          options.repositoryEnvironments,
+        ),
+        {
+          githubToken: options.githubToken,
+          vercelToken: options.vercelToken,
+        },
+      );
       return {
         path: repository.path,
-        environments: await collectDeploymentDates(
+        environments: await collectDeploymentComparisons(
           repository.path,
-          metadata,
-          getDeploymentDateSources(
-            repository.path,
-            options.repositoryEnvironments,
-          ),
-          {
-            githubToken: options.githubToken,
-            vercelToken: options.vercelToken,
-          },
+          dated,
         ),
       } satisfies DeploymentsResponse;
     },
