@@ -5,8 +5,7 @@ import type {
   PackageVersion,
   PackageVersions,
 } from '@pulsepit/contracts';
-import { simpleGit } from 'simple-git';
-import { createCommandEnvironment } from './command-environment.service.js';
+import { createGitClient } from './git-client.service.js';
 
 export type { PackageVersion, PackageVersions } from '@pulsepit/contracts';
 
@@ -78,12 +77,7 @@ export async function getPackageManifest(
   repositoryPath: string,
   ref: PackageRef,
 ): Promise<PackageManifestResult> {
-  const environment = createCommandEnvironment('git');
-  const git = simpleGit({
-    baseDir: repositoryPath,
-    timeout: { block: 10_000 },
-    allowEnvironment: Object.keys(environment),
-  }).env(environment);
+  const git = createGitClient(repositoryPath);
 
   let content: string;
   try {

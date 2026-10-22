@@ -1,8 +1,8 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import type { GitStatus, LocalBranch } from '@pulsepit/contracts';
-import { simpleGit } from 'simple-git';
 import { createCommandEnvironment } from './command-environment.service.js';
+import { createGitClient } from './git-client.service.js';
 
 export type { GitStatus, LocalBranch } from '@pulsepit/contracts';
 
@@ -92,12 +92,7 @@ export async function fetchRepository(
 }
 
 export async function getGitStatus(repositoryPath: string): Promise<GitStatus> {
-  const environment = createCommandEnvironment('git');
-  const git = simpleGit({
-    baseDir: repositoryPath,
-    timeout: { block: 10_000 },
-    allowEnvironment: Object.keys(environment),
-  }).env(environment);
+  const git = createGitClient(repositoryPath);
   const status = await git.status(['--untracked-files=all']);
   const untrackedFiles = status.not_added.length;
 
