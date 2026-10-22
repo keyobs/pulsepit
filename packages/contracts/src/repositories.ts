@@ -42,6 +42,13 @@ export const RepositorySync = z.object({
 
 export type RepositorySync = z.infer<typeof RepositorySync>;
 
+export const RepositoryBeacon = z.object({
+  package: z.boolean(),
+  configuration: z.enum(['missing', 'partial', 'ok', 'invalid']),
+  active: z.boolean(),
+});
+export type RepositoryBeacon = z.infer<typeof RepositoryBeacon>;
+
 export const Repository = z.object({
   name: z.string(),
   path: z.string(),
@@ -58,6 +65,7 @@ export const Repository = z.object({
   urls: z.record(z.string(), z.string()),
   hosting: z.record(z.string(), z.string()),
   deploymentEnvironments: z.array(DeploymentEnvironmentConfig),
+  beacon: RepositoryBeacon,
 });
 
 export type Repository = z.infer<typeof Repository>;

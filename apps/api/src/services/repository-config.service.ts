@@ -31,7 +31,19 @@ export interface RepositoryDeploymentConfig {
   urls: RepositoryUrls;
   hosting: RepositoryUrls;
   environments: RepositoryEnvironments;
+  errors?: RepositoryConfigurationErrors;
 }
+
+export interface RepositoryConfigurationError {
+  code: 'INVALID_REPOSITORY_CONFIGURATION';
+  message: string;
+}
+export type RepositoryConfigurationErrors = Record<
+  string,
+  RepositoryConfigurationError
+>;
+
+class InvalidRepositorySettings extends Error {}
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -39,13 +51,19 @@ function isObject(value: unknown): value is Record<string, unknown> {
 
 export async function loadRepositoryDeploymentConfig(
   configPath = join(homedir(), '.config', 'pulsepit', 'config.json'),
+  options: { isolateInvalidRepositories?: boolean } = {},
 ): Promise<RepositoryDeploymentConfig> {
+  const empty = (): RepositoryDeploymentConfig => ({
+    urls: {},
+    hosting: {},
+    environments: {},
+    ...(options.isolateInvalidRepositories ? { errors: {} } : {}),
+  });
   let content: string;
   try {
     content = await readFile(configPath, 'utf8');
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT')
-      return { urls: {}, hosting: {}, environments: {} };
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return empty();
     throw new Error(
       `Unable to read repository configuration at ${configPath}.`,
     );
@@ -60,55 +78,77 @@ export async function loadRepositoryDeploymentConfig(
   }
   if (!isObject(data))
     throw new Error('Repository configuration must contain a JSON object.');
-  if (data.repositories === undefined)
-    return { urls: {}, hosting: {}, environments: {} };
+  if (data.repositories === undefined) return empty();
   if (!isObject(data.repositories))
     throw new Error('The repositories configuration must be an object.');
 
-  const result: RepositoryDeploymentConfig = {
-    urls: {},
-    hosting: {},
-    environments: {},
-  };
+  const result = empty();
+  const seen = new Set<string>();
   for (const [path, settings] of Object.entries(data.repositories)) {
-    if (!isAbsolute(path))
-      throw new Error('Configured repository paths must be absolute.');
-    const normalizedPath = resolve(path);
-    if (Object.hasOwn(result.urls, normalizedPath))
-      throw new Error(
-        `Duplicate repository configuration for ${normalizedPath}.`,
+    const normalizedPath = isAbsolute(path) ? resolve(path) : path;
+    try {
+      if (!isAbsolute(path))
+        throw new InvalidRepositorySettings(
+          'Configured repository paths must be absolute.',
+        );
+      if (seen.has(normalizedPath))
+        throw new InvalidRepositorySettings(
+          `Duplicate repository configuration for ${normalizedPath}.`,
+        );
+      seen.add(normalizedPath);
+      if (!isObject(settings))
+        throw new InvalidRepositorySettings(
+          `Repository settings must be an object for ${path}.`,
+        );
+      const urls = validateLinks(settings.urls, 'urls', path);
+      const hosting = validateLinks(settings.hosting, 'hosting', path);
+      if (
+        settings.deployments !== undefined &&
+        (Object.keys(urls).length > 0 || Object.keys(hosting).length > 0)
+      ) {
+        throw new InvalidRepositorySettings(
+          `Repository ${path} must not mix deployments with non-empty urls or hosting.`,
+        );
+      }
+      const environments =
+        settings.deployments === undefined
+          ? legacyEnvironments(urls, hosting)
+          : validateDeployments(settings.deployments, path);
+      result.environments[normalizedPath] = environments;
+      result.urls[normalizedPath] = Object.fromEntries(
+        environments.flatMap((environment) =>
+          environment.url === null
+            ? []
+            : [[environment.environment, environment.url]],
+        ),
       );
-    if (!isObject(settings))
-      throw new Error(`Repository settings must be an object for ${path}.`);
-    const urls = validateLinks(settings.urls, 'urls', path);
-    const hosting = validateLinks(settings.hosting, 'hosting', path);
-    if (
-      settings.deployments !== undefined &&
-      (Object.keys(urls).length > 0 || Object.keys(hosting).length > 0)
-    ) {
-      throw new Error(
-        `Repository ${path} must not mix deployments with non-empty urls or hosting.`,
+      result.hosting[normalizedPath] = Object.fromEntries(
+        environments.flatMap((environment) =>
+          environment.hosting?.url == null
+            ? []
+            : [[environment.environment, environment.hosting.url]],
+        ),
       );
+    } catch (error) {
+      if (!result.errors) throw error;
+      Object.defineProperty(result.errors, normalizedPath, {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: {
+          code: 'INVALID_REPOSITORY_CONFIGURATION',
+          message:
+            error instanceof InvalidRepositorySettings
+              ? error.message
+              : 'Unable to validate repository deployment configuration.',
+        } satisfies RepositoryConfigurationError,
+      });
+      if (isAbsolute(path)) {
+        result.urls[normalizedPath] = {};
+        result.hosting[normalizedPath] = {};
+        result.environments[normalizedPath] = [];
+      }
     }
-    const environments =
-      settings.deployments === undefined
-        ? legacyEnvironments(urls, hosting)
-        : validateDeployments(settings.deployments, path);
-    result.environments[normalizedPath] = environments;
-    result.urls[normalizedPath] = Object.fromEntries(
-      environments.flatMap((environment) =>
-        environment.url === null
-          ? []
-          : [[environment.environment, environment.url]],
-      ),
-    );
-    result.hosting[normalizedPath] = Object.fromEntries(
-      environments.flatMap((environment) =>
-        environment.hosting?.url == null
-          ? []
-          : [[environment.environment, environment.hosting.url]],
-      ),
-    );
   }
   return result;
 }
@@ -118,10 +158,14 @@ function validateDeployments(
   path: string,
 ): ConfiguredDeploymentEnvironment[] {
   if (!isObject(value))
-    throw new Error(`Repository deployments must be an object for ${path}.`);
+    throw new InvalidRepositorySettings(
+      `Repository deployments must be an object for ${path}.`,
+    );
   return Object.entries(value).map(([environment, settings]) => {
     if (!isObject(settings))
-      throw new Error(`Invalid deployment ${environment} for ${path}.`);
+      throw new InvalidRepositorySettings(
+        `Invalid deployment ${environment} for ${path}.`,
+      );
     const parsed = DeploymentEnvironmentConfig.safeParse({
       ...settings,
       environment,
@@ -133,7 +177,7 @@ function validateDeployments(
       (parsed.data.branch !== null && !parsed.data.branch.trim()) ||
       (parsed.data.hosting !== null && !parsed.data.hosting.label.trim())
     ) {
-      throw new Error(
+      throw new InvalidRepositorySettings(
         `Invalid deployment settings for ${environment} in ${path}.`,
       );
     }
@@ -186,7 +230,9 @@ function validateMetadataSource(
     typeof value.url !== 'string' ||
     Object.keys(value).some((key) => key !== 'type' && key !== 'url')
   ) {
-    throw new Error(`Invalid metadata source for ${environment} in ${path}.`);
+    throw new InvalidRepositorySettings(
+      `Invalid metadata source for ${environment} in ${path}.`,
+    );
   }
   return {
     type: 'static',
@@ -210,7 +256,7 @@ function validateDeploymentDateSource(
         (key) => !['type', 'projectId', 'teamId'].includes(key),
       )
     ) {
-      throw new Error(
+      throw new InvalidRepositorySettings(
         `Invalid deployment date source for ${environment} in ${path}.`,
       );
     }
@@ -228,7 +274,7 @@ function validateDeploymentDateSource(
     value.environment.length > 255 ||
     Object.keys(value).some((key) => key !== 'type' && key !== 'environment')
   ) {
-    throw new Error(
+    throw new InvalidRepositorySettings(
       `Invalid deployment date source for ${environment} in ${path}.`,
     );
   }
@@ -339,14 +385,14 @@ function validateUrl(value: string, field: string, path: string): URL {
   try {
     url = new URL(value);
   } catch {
-    throw new Error(`Invalid ${field} URL in ${path}.`);
+    throw new InvalidRepositorySettings(`Invalid ${field} URL in ${path}.`);
   }
   if (
     !['http:', 'https:'].includes(url.protocol) ||
     url.username ||
     url.password
   ) {
-    throw new Error(
+    throw new InvalidRepositorySettings(
       `URLs must use HTTP or HTTPS without embedded credentials for ${field} in ${path}.`,
     );
   }
@@ -360,11 +406,13 @@ function validateLinks(
 ): Record<string, string> {
   const links = value === undefined ? {} : value;
   if (!isObject(links))
-    throw new Error(`Repository ${field} must be an object for ${path}.`);
+    throw new InvalidRepositorySettings(
+      `Repository ${field} must be an object for ${path}.`,
+    );
   const validated: Record<string, string> = {};
   for (const [environment, value] of Object.entries(links)) {
     if (!environment.trim() || typeof value !== 'string' || !value.trim()) {
-      throw new Error(
+      throw new InvalidRepositorySettings(
         `Repository ${field} must map non-empty environment names to URL strings for ${path}.`,
       );
     }

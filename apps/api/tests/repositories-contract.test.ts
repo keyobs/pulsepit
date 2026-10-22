@@ -86,6 +86,7 @@ test('repository list satisfies the shared contract with Git, package and deploy
     },
     originError: null,
     urls,
+    beacon: { package: false, configuration: 'missing', active: false },
     hosting,
     deploymentEnvironments: [
       {
@@ -180,6 +181,7 @@ test('repository contract rejects incompatible mock formats and missing nullable
     urls: {},
     hosting: {},
     deploymentEnvironments: [],
+    beacon: { package: false, configuration: 'missing', active: false },
   };
   for (const incompatible of [
     { ...repository, versions: { ...repository.versions, head: '1.2.3' } },

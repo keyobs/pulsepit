@@ -16,13 +16,22 @@ try {
 const config = readConfig();
 const deploymentConfig = await loadRepositoryDeploymentConfig(
   config.configPath,
+  { isolateInvalidRepositories: true },
 );
 const app = buildApp(
   config,
   deploymentConfig.urls,
   deploymentConfig.hosting,
   deploymentConfig.environments,
+  deploymentConfig.errors,
 );
+
+for (const [path, error] of Object.entries(deploymentConfig.errors ?? {})) {
+  app.log.warn(
+    { path, ...error },
+    'Repository deployment configuration disabled.',
+  );
+}
 
 try {
   await app.listen({ port: config.port, host: '127.0.0.1' });

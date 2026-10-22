@@ -21,8 +21,10 @@ import {
   getRepositoryDetails,
   type Repository,
 } from '../../services/repositories.service.js';
+import { inspectRepositoryBeacon } from '../../services/repository-beacon.service.js';
 import {
   getDeploymentEnvironments,
+  type RepositoryConfigurationErrors,
   type RepositoryEnvironments,
   type RepositoryUrls,
 } from '../../services/repository-config.service.js';
@@ -33,10 +35,18 @@ export const getRepositoriesRoutes: FastifyPluginAsync<
     repositoryUrls: RepositoryUrls;
     repositoryHosting: RepositoryUrls;
     repositoryEnvironments: RepositoryEnvironments;
+    repositoryConfigurationErrors: RepositoryConfigurationErrors;
   }
 > = async (app, options) => {
-  const withDeploymentLinks = (repository: Repository): RepositoryResponse => ({
+  const withRepositoryConfiguration = async (
+    repository: Repository,
+  ): Promise<RepositoryResponse> => ({
     ...repository,
+    beacon: await inspectRepositoryBeacon(
+      repository.path,
+      options.repositoryEnvironments[repository.path] ?? [],
+      Object.hasOwn(options.repositoryConfigurationErrors, repository.path),
+    ),
     urls: options.repositoryUrls[repository.path] ?? {},
     hosting: options.repositoryHosting[repository.path] ?? {},
     deploymentEnvironments: getDeploymentEnvironments(
@@ -49,9 +59,18 @@ export const getRepositoriesRoutes: FastifyPluginAsync<
 
   app.get('', async () => {
     const result = await findRepositories(options.scanPaths);
+    const configurationErrors = result.repositories.flatMap(({ path }) => {
+      if (!Object.hasOwn(options.repositoryConfigurationErrors, path))
+        return [];
+      const error = options.repositoryConfigurationErrors[path];
+      return [{ path, code: error.code, message: error.message }];
+    });
     return {
       ...result,
-      repositories: result.repositories.map(withDeploymentLinks),
+      repositories: await Promise.all(
+        result.repositories.map(withRepositoryConfiguration),
+      ),
+      scanErrors: [...result.scanErrors, ...configurationErrors],
     } satisfies ListRepositoriesResponse;
   });
 
@@ -78,7 +97,7 @@ export const getRepositoriesRoutes: FastifyPluginAsync<
           error: 'Repository not found in configured scan directories.',
         } satisfies ErrorResponse);
       }
-      return withDeploymentLinks(repository);
+      return withRepositoryConfiguration(repository);
     },
   );
 

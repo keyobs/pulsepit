@@ -36,6 +36,7 @@ export {
   PackageVersion,
   PackageVersions,
   Repository,
+  RepositoryBeacon,
   RepositorySync,
   ScanError,
 } from './repositories.js';

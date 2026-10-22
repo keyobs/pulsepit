@@ -3,6 +3,7 @@ import type { AppConfig } from './config.js';
 import { healthRoutes } from './routes/health.routes.js';
 import { repositoriesRoutes } from './routes/repositories/index.js';
 import type {
+  RepositoryConfigurationErrors,
   RepositoryEnvironments,
   RepositoryUrls,
 } from './services/repository-config.service.js';
@@ -12,6 +13,7 @@ export function buildApp(
   repositoryUrls: RepositoryUrls = {},
   repositoryHosting: RepositoryUrls = {},
   repositoryEnvironments: RepositoryEnvironments = {},
+  repositoryConfigurationErrors: RepositoryConfigurationErrors = {},
 ) {
   const app = Fastify({ logger: true });
 
@@ -24,6 +26,7 @@ export function buildApp(
     repositoryUrls,
     repositoryHosting,
     repositoryEnvironments,
+    repositoryConfigurationErrors,
   });
 
   return app;

@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import type { AppConfig } from '../../config.js';
 import type {
+  RepositoryConfigurationErrors,
   RepositoryEnvironments,
   RepositoryUrls,
 } from '../../services/repository-config.service.js';
@@ -14,6 +15,7 @@ export const repositoriesRoutes: FastifyPluginAsync<
     repositoryUrls: RepositoryUrls;
     repositoryHosting: RepositoryUrls;
     repositoryEnvironments: RepositoryEnvironments;
+    repositoryConfigurationErrors: RepositoryConfigurationErrors;
   }
 > = async (app, options) => {
   app.register(getDeploymentsRoutes, {
@@ -33,6 +35,7 @@ export const repositoriesRoutes: FastifyPluginAsync<
     repositoryUrls: options.repositoryUrls,
     repositoryHosting: options.repositoryHosting,
     repositoryEnvironments: options.repositoryEnvironments,
+    repositoryConfigurationErrors: options.repositoryConfigurationErrors,
   });
   app.register(postRepositoriesRoutes, {
     scanPaths: options.scanPaths,
