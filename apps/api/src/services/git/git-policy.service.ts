@@ -25,7 +25,9 @@ export function unconfiguredGitPolicy(): RepositoryGitPolicy {
     error: null,
   };
 }
-function invalidGitPolicy(): RepositoryGitPolicy {
+export function invalidGitPolicy(
+  message = 'Unable to validate repository push policy.',
+): RepositoryGitPolicy {
   return {
     state: 'invalid',
     source: null,
@@ -34,7 +36,7 @@ function invalidGitPolicy(): RepositoryGitPolicy {
     branches: {},
     error: {
       code: 'INVALID_PUSH_POLICY',
-      message: 'Unable to validate repository push policy.',
+      message,
     },
   };
 }

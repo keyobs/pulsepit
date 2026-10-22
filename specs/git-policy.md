@@ -56,7 +56,7 @@ avec le dépôt reste explicite. Les protections du serveur Git sont indépendan
 Après modification du fichier de configuration, redémarrer l'API puis actualiser
 les branches. Le fichier de configuration personnel reste hors du dépôt Git.
 
-## Déclaration partageable dans le dépôt : préparation
+## Déclaration partageable dans le dépôt
 
 Le format v1 proposé vit dans `.pulsepit/git-policy.json` :
 
@@ -92,10 +92,25 @@ branches via Git et ne lance aucun hook. Une erreur donne `INVALID_PUSH_POLICY`,
 sans contenu de fichier ni erreur système brute ; un fichier absent est distingué
 d'un fichier invalide. Chaque worktree lit sa propre déclaration.
 
-**État : préparé, pas encore raccordé aux routes ou aux hooks.** Le fichier ne
-remplace pas encore la configuration Pulsepit utilisée en production. La nouvelle
-provenance `repository-file` et la gestion de deux déclarations concurrentes sont
-proposées au front dans `CONVENTION.md` avant raccordement. Aucun hook existant
-n'est modifié automatiquement. L'adaptateur `pre-push` devra contrôler les
-références de destination fournies par Git sur stdin et conserver les contrôles
-du dépôt ; l'inventaire Husky reste indépendant de cette déclaration.
+**État : raccordé aux routes et au précontrôle de push.** Le fichier est lu dans
+le working tree courant, y compris ses modifications non commitées. Les règles
+ne sont pas lues dans le commit de chaque branche sélectionnée. Une réponse
+`/branches` utilise une seule lecture pour toutes ses entrées ; chaque push
+relit sa propre déclaration avant de décider.
+
+Un fichier valide, sans politique locale déclarée, produit
+`source: "repository-file"`. Un fichier absent conserve le mécanisme de
+configuration locale. Un fichier incorrect ou deux politiques présentes
+simultanément produisent `INVALID_PUSH_POLICY` et bloquent le dépôt concerné,
+sans empêcher les réponses concernant les autres dépôts. Il n'existe ni fusion
+implicite ni priorité permettant d'affaiblir une règle.
+
+Pour migrer, préparer et valider le fichier puis retirer explicitement la copie
+`git.policy` de la configuration personnelle. Cette modification de configuration
+nécessite un redémarrage de l'API. Le contenu du fichier du dépôt est ensuite
+relu à chaque demande, sans redémarrage.
+
+Le raccordement Pulsepit n'installe pas de hook. L'adaptateur `pre-push` reste
+l'étape suivante : il devra lire cette même déclaration, contrôler les références
+de destination fournies par Git sur stdin et conserver les contrôles du dépôt.
+L'inventaire Husky reste indépendant de cette déclaration.

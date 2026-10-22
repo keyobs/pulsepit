@@ -17,6 +17,7 @@ import {
   type RepositoryGitPolicies,
   repositoryGitPolicy,
 } from '../../services/git/git-policy.service.js';
+import { resolveRepositoryGitPolicy } from '../../services/git/git-policy-source.service.js';
 import {
   getPackageManifest,
   type PackageRef,
@@ -48,9 +49,9 @@ export const getRepositoriesRoutes: FastifyPluginAsync<
     repository: Repository,
   ): Promise<RepositoryResponse> => ({
     ...repository,
-    gitPolicy: repositoryGitPolicy(
+    gitPolicy: await resolveRepositoryGitPolicy(
       repository.path,
-      options.repositoryGitPolicies,
+      repositoryGitPolicy(repository.path, options.repositoryGitPolicies),
     ),
     beacon: await inspectRepositoryBeacon(
       repository.path,
@@ -198,14 +199,15 @@ export const getRepositoriesRoutes: FastifyPluginAsync<
       if (result.error !== null) {
         return reply.code(result.code === 'TIMEOUT' ? 504 : 502).send(result);
       }
+      const policy = await resolveRepositoryGitPolicy(
+        repository.path,
+        repositoryGitPolicy(repository.path, options.repositoryGitPolicies),
+      );
       return {
         path: repository.path,
         branches: result.branches.map((branch) => ({
           ...branch,
-          ...assessBranchPush(
-            repositoryGitPolicy(repository.path, options.repositoryGitPolicies),
-            branch.name,
-          ),
+          ...assessBranchPush(policy, branch.name),
         })),
       } satisfies BranchesResponse;
     },

@@ -43,7 +43,7 @@ const NoBranchPolicies = z
 export const RepositoryGitPolicy = z.discriminatedUnion('state', [
   z.object({
     state: z.literal('configured'),
-    source: z.literal('local-config'),
+    source: z.enum(['local-config', 'repository-file']),
     remote: z.literal('origin'),
     default: GitBranchPolicy,
     branches: z.record(z.string().min(1), GitBranchPolicy),

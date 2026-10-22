@@ -6,6 +6,7 @@ import {
   assessBranchPush,
   unconfiguredGitPolicy,
 } from './git-policy.service.js';
+import { resolveRepositoryGitPolicy } from './git-policy-source.service.js';
 
 const execute = promisify(execFile);
 class PushTimeoutError extends Error {}
@@ -38,8 +39,13 @@ export async function pushRepositoryBranch(
 ): Promise<GitPushResult> {
   const deadline = Date.now() + 30_000;
   let pushStarted = false;
+  let effectivePolicy = policy;
   function policyRefusal(gitAvailable = true): GitPushResult | null {
-    const { pushAssessment } = assessBranchPush(policy, branch, gitAvailable);
+    const { pushAssessment } = assessBranchPush(
+      effectivePolicy,
+      branch,
+      gitAvailable,
+    );
     if (pushAssessment.canAttempt) return null;
     const reason = pushAssessment.reasons[0];
     switch (reason.code) {
@@ -97,6 +103,7 @@ export async function pushRepositoryBranch(
       };
     }
 
+    effectivePolicy = await resolveRepositoryGitPolicy(repositoryPath, policy);
     const refusal = policyRefusal();
     if (refusal) return refusal;
 
