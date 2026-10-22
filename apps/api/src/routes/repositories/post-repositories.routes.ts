@@ -94,7 +94,8 @@ export const postRepositoriesRoutes: FastifyPluginAsync<
             ? 400
             : result.code === 'BRANCH_NOT_FOUND'
               ? 404
-              : result.code === 'REMOTE_NOT_FOUND'
+              : result.code === 'REMOTE_NOT_FOUND' ||
+                  result.code === 'LOCAL_HOOK_FAILED'
                 ? 422
                 : result.code === 'NON_FAST_FORWARD' ||
                     result.code === 'REMOTE_REJECTED'

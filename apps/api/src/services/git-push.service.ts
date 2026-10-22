@@ -15,6 +15,7 @@ export type GitPushResult =
         | 'NON_FAST_FORWARD'
         | 'REMOTE_REJECTED'
         | 'AUTHENTICATION_FAILED'
+        | 'LOCAL_HOOK_FAILED'
         | 'PUSH_FAILED'
         | 'TIMEOUT';
       error: string;
@@ -109,6 +110,18 @@ export async function pushRepositoryBranch(
     }
     const failure = error as { stdout?: string; stderr?: string };
     const output = failure.stdout ?? '';
+    if (
+      /(?:^|\n)husky - pre-push script failed \(code [1-9]\d*\)\r?(?:\n|$)/.test(
+        `${output}\n${failure.stderr ?? ''}`,
+      )
+    ) {
+      return {
+        success: false,
+        code: 'LOCAL_HOOK_FAILED',
+        error:
+          'The local pre-push hook rejected the push. Check the repository lint and tests in a terminal.',
+      };
+    }
     // Parse only porcelain rejection records; free-form server messages may
     // contain similar words without describing the actual push result.
     const rejections = output
