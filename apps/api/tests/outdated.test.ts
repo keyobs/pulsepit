@@ -470,9 +470,9 @@ else {
     );
 
     await y.test(
-      'rejects Yarn Classic based on the actual executable version',
+      'rejects pre-Classic Yarn based on the actual executable version',
       async () => {
-        await yarnFixture({ yarnVersion: '1.22.22' });
+        await yarnFixture({ yarnVersion: '0.27.5' });
         const response = await app.inject({
           method: 'POST',
           url: '/api/repositories/outdated',
