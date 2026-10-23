@@ -127,6 +127,7 @@ export function assessBranchPush(
   repositoryPolicy: RepositoryGitPolicy,
   branch: string,
   gitAvailable = true,
+  checksVerified = false,
 ): { policy: GitBranchPolicy; pushAssessment: PushAssessment } {
   const policy =
     repositoryPolicy.state === 'configured'
@@ -152,7 +153,7 @@ export function assessBranchPush(
       'DIRECT_PUSH_FORBIDDEN',
       'Direct push to this branch is forbidden by the repository policy.',
     );
-  if (policy.requiredChecks?.length)
+  if (policy.requiredChecks?.length && !checksVerified)
     return blocked(
       'CHECK_RUNNER_UNAVAILABLE',
       'Required checks cannot be run by this server.',

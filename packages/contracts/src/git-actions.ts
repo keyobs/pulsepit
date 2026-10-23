@@ -14,6 +14,7 @@ export type FetchResponse = z.infer<typeof FetchResponse>;
 export const PushRequest = z.object({
   path: z.string().min(1),
   branch: z.string().min(1),
+  checksId: z.uuid().optional(),
 });
 
 export type PushRequest = z.infer<typeof PushRequest>;

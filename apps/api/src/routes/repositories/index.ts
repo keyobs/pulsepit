@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import type { AppConfig } from '../../config.js';
+import { GitChecksService } from '../../services/git/git-checks.service.js';
 import type { RepositoryGitPolicies } from '../../services/git/git-policy.service.js';
 import type {
   RepositoryConfigurationErrors,
@@ -22,7 +23,10 @@ export const repositoriesRoutes: FastifyPluginAsync<
     repositoryGitPolicies: RepositoryGitPolicies;
   }
 > = async (app, options) => {
+  const checks = new GitChecksService(options.repositoryGitPolicies);
+  app.addHook('onClose', () => checks.close());
   app.register(checksRoutes, {
+    checks,
     scanPaths: options.scanPaths,
     repositoryGitPolicies: options.repositoryGitPolicies,
   });
@@ -40,6 +44,7 @@ export const repositoriesRoutes: FastifyPluginAsync<
     githubToken: options.githubToken,
   });
   app.register(getRepositoriesRoutes, {
+    checks,
     scanPaths: options.scanPaths,
     repositoryUrls: options.repositoryUrls,
     repositoryHosting: options.repositoryHosting,
@@ -48,6 +53,7 @@ export const repositoriesRoutes: FastifyPluginAsync<
     repositoryGitPolicies: options.repositoryGitPolicies,
   });
   app.register(postRepositoriesRoutes, {
+    checks,
     repositoryGitPolicies: options.repositoryGitPolicies,
     scanPaths: options.scanPaths,
     repositoryUrls: options.repositoryUrls,

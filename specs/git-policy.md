@@ -42,8 +42,9 @@ Cet exemple décrit une convention particulière de dépôt, pas une règle impl
 appliquée à tous les projets. Une règle de branche remplace entièrement `default`.
 Les identifiants de contrôles ne sont pas des commandes à exécuter.
 
-L'exécuteur Pulsepit des contrôles n'étant pas encore livré, toute liste de
-contrôles obligatoires non vide bloque le push avec `CHECK_RUNNER_UNAVAILABLE`.
+Une liste de contrôles obligatoires non vide exige un succès récent et réutilisable
+de l'exécuteur Pulsepit décrit ci-dessous ; sinon le push reste bloqué avec
+`CHECK_RUNNER_UNAVAILABLE`.
 `directPush: "allowed"` reste compatible avec cette obligation : la permission
 est conditionnelle, elle ne signifie pas que les contrôles ont déjà réussi.
 Le front utilise `pushAssessment.canAttempt` pour activer l'action.
@@ -144,9 +145,8 @@ remplacent pas un environnement isolé ni les protections CI du serveur.
 
 Un fichier absent, invalide ou trop volumineux, un lien symbolique observé ou un
 contexte non pris en charge entraîne un refus. L'adaptateur n'exécute pas les
-scripts lors d'une simple lecture de politique par Pulsepit. Le backend conserve
-son refus `CHECK_RUNNER_UNAVAILABLE` pour les obligations de contrôles : installer
-un hook ne constitue pas une preuve utilisable par son futur exécuteur.
+scripts lors d'une simple lecture de politique par Pulsepit. Installer un hook
+ne constitue pas en soi une preuve de réussite des contrôles.
 
 La copie du helper et le hook sont versionnés avec la déclaration dans le dépôt
 cible. Si un outil de génération de hooks les remplace, leur intégration doit
@@ -156,8 +156,10 @@ cible. Si un outil de génération de hooks les remplace, leur intégration doit
 
 L'exécuteur backend lance le même flow de contrôles que l'adaptateur, sans
 appeler `git push` ni exécuter le hook pre-push installé. Il utilise le script
-canonique livré avec Pulsepit ; la copie installée dans izeetok n'a pas besoin
-d'être remplacée pour cette étape. Aucun contrôle n'est lancé au scan.
+canonique livré avec Pulsepit. La réutilisation d'un succès au push exige une
+copie identique dans le dépôt cible et le wrapper exact présenté ci-dessus.
+Un hook personnalisé ou ancien reste conservé et rend cette réutilisation
+indisponible. Aucun contrôle n'est lancé au scan.
 
 - `POST /api/repositories/checks`, body `{ "path": "…", "branch": "develop" }` :
   HTTP 202 et objet `ChecksOperation`, avec en-tête `Location` pour le suivi.
@@ -190,10 +192,50 @@ séparé des logs et sont validées ; les tokens API ne sont pas transmis au
 processus enfant. Les contrôles restent du code local exécuté avec les droits
 du compte : ce dispositif n'est pas une sandbox.
 
-**Une opération réussie ne déclenche pas et n'autorise pas encore un push.**
-Elle décrit les contrôles effectués pour son SHA. Le push actuel conserve
-`CHECK_RUNNER_UNAVAILABLE` pour les branches à contrôles obligatoires : sa suite
-devra associer cette preuve au contexte effectif dans le hook, pour éviter de
-relancer les tests ou de réutiliser un résultat périmé. Le front peut proposer
-une action séparée de lancement/suivi des contrôles sans changer le bouton de
-push existant.
+## Réutiliser les contrôles pour un push
+
+Une opération réussie ne déclenche jamais de push automatique. Pendant cinq
+minutes après sa fin, elle peut autoriser une seule tentative explicitement
+demandée, uniquement pour le même dépôt, la même branche courante, le même SHA,
+un working tree propre et une déclaration strictement identique (empreinte des
+octets). Le helper installé doit correspondre au script canonique ayant exécuté
+les contrôles ; les autres hooks restent actifs. Cette vérification est refaite
+au moment du push, indépendamment d'une réponse `/branches` précédente.
+
+`GET /api/repositories/branches?path=…` expose `checksId: UUID | null` sur chaque
+branche. Lorsqu'un résultat réutilisable existe, `pushAssessment` en tient compte :
+une branche explicitement autorisée peut devenir `ready`, avec `canAttempt: true`.
+Une politique inconnue reste inconnue ; les protections distantes restent indépendantes.
+
+`POST /api/repositories/push` accepte `{ path, branch, checksId? }`. Le front peut
+transmettre l'identifiant retourné par `/branches` ou l'opération ; sans identifiant,
+le backend recherche automatiquement un résultat disponible. Sans résultat valable,
+les obligations continuent de bloquer le push. Un identifiant inconnu, expiré de
+l'historique, appartenant à un autre dépôt ou à une autre branche donne 404
+`CHECKS_NOT_FOUND` ; un résultat périmé, consommé ou un contexte modifié donne 409
+`CHECK_CONTEXT_MISMATCH`. Un dépôt occupé donne 409 `CHECKS_BUSY`.
+
+Le backend signe une preuve privée valable soixante secondes, liée au chemin réel,
+à la référence destination, au SHA contrôlé et à la déclaration. Git reçoit une
+source épinglée à ce SHA et une seule destination ; plusieurs URL de push sont
+refusées. Le pre-push habituel s'exécute : l'adaptateur vérifie la signature et le
+contexte effectif, consomme le fichier de preuve, puis réutilise le succès au lieu
+de relancer lint/tests. Ce mode interne accepte le SHA brut transmis par Git ;
+le mode terminal ordinaire conserve ses sources nommées et son flow de contrôles.
+Aucun paramètre HTTP ne permet de fournir une preuve, une clé ou un environnement.
+Une tentative ayant consommé le résultat exige de nouveaux contrôles pour réessayer,
+même si le réseau ou le serveur refuse ensuite le push.
+
+`ChecksOperation.push` vaut initialement `null`, puis contient `status: running |
+succeeded | failed`, `startedAt`, `completedAt` et `error: { code, message } | null`.
+La consultation de l'opération permet de suivre le push pendant sa requête HTTP.
+Le statut principal reste celui des contrôles : `succeeded` ne signifie pas que le
+push a réussi. Un refus de contexte avant tentative peut aussi être enregistré
+comme échec de push, sans effacer la réussite des contrôles.
+
+La preuve et les clés restent internes au processus API et au hook. Ce mécanisme
+évite une réutilisation accidentelle ou périmée par l'API ; le compte local conserve
+le contrôle de ses hooks et de ses fichiers. Les protections de branche et CI
+côté serveur restent nécessaires. Une modification concurrente après les dernières
+vérifications locales n'est pas isolée ; le commit effectivement transmis reste
+épinglé au SHA contrôlé.

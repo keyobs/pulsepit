@@ -1,6 +1,5 @@
 import { type ChildProcess, execFile, spawn } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
-import { fileURLToPath } from 'node:url';
+import { generateKeyPairSync, randomUUID } from 'node:crypto';
 import { promisify } from 'node:util';
 import type {
   ChecksOperation,
@@ -9,19 +8,25 @@ import type {
 } from '@pulsepit/contracts';
 import { createCommandEnvironment } from '../processes/command-environment.service.js';
 import {
+  type ChecksEvidence,
+  checksAdapterDigest,
+  checksAdapterPath,
+  createChecksProof,
+  managedChecksHook,
+  verifyChecksContext,
+} from './git-checks-proof.service.js';
+import {
   type RepositoryGitPolicies,
   repositoryGitPolicy,
   validateGitPolicyBranchName,
 } from './git-policy.service.js';
 import { resolveRepositoryGitPolicy } from './git-policy-source.service.js';
+import {
+  type GitPushResult,
+  pushRepositoryBranch,
+} from './git-push.service.js';
 
 const execute = promisify(execFile);
-const adapter = fileURLToPath(
-  new URL(
-    '../../../../../scripts/hooks/pulsepit-pre-push.mjs',
-    import.meta.url,
-  ),
-);
 const now = () => new Date().toISOString();
 const terminal = (value: ChecksOperation) =>
   !['queued', 'running'].includes(value.status);
@@ -40,12 +45,17 @@ type Job = {
   child?: ChildProcess;
   done: Promise<void>;
   resolve: () => void;
+  evidence?: ChecksEvidence;
+  adapterDigest?: string;
+  used?: boolean;
 };
 
 export class GitChecksService {
   private jobs = new Map<string, Job>();
   private locks = new Map<string, string>();
   private closed = false;
+  private keys = generateKeyPairSync('ed25519');
+  private pushes = new Set<Promise<GitPushResult>>();
   constructor(
     private policies: RepositoryGitPolicies = {},
     private options: { timeoutMs?: number } = {},
@@ -54,6 +64,7 @@ export class GitChecksService {
     for (const [id, job] of this.jobs) {
       if (
         terminal(job.value) &&
+        job.value.push?.status !== 'running' &&
         job.value.completedAt &&
         (Date.now() - Date.parse(job.value.completedAt) > 15 * 60_000 ||
           this.jobs.size >= 100)
@@ -167,6 +178,7 @@ export class GitChecksService {
         completedAt: null,
       })),
       error: null,
+      push: null,
     };
     let complete = () => {};
     const done = new Promise<void>((resolve) => {
@@ -243,6 +255,172 @@ export class GitChecksService {
     for (const job of this.jobs.values())
       this.cancel(job.value.id, job.value.path);
     await Promise.all([...this.jobs.values()].map((job) => job.done));
+    await Promise.allSettled([...this.pushes]);
+  }
+  private reusable(
+    job: Job,
+    path: string,
+    branch: string,
+    policy: RepositoryGitPolicy,
+  ): boolean {
+    return (
+      job.value.path === path &&
+      job.value.branch === branch &&
+      job.value.status === 'succeeded' &&
+      !!job.value.completedAt &&
+      Date.now() - Date.parse(job.value.completedAt) < 5 * 60_000 &&
+      !job.used &&
+      !!job.evidence &&
+      JSON.stringify(policy) === JSON.stringify(job.policy)
+    );
+  }
+  async availableCheck(
+    path: string,
+    branch: string,
+    policy?: RepositoryGitPolicy,
+  ): Promise<string | null> {
+    this.prune();
+    if (this.closed || this.locks.has(path)) return null;
+    const candidates = [...this.jobs.values()]
+      .reverse()
+      .filter(
+        (job) =>
+          job.value.path === path &&
+          job.value.branch === branch &&
+          job.value.status === 'succeeded' &&
+          !job.used,
+      );
+    if (!candidates.length) return null;
+    const current =
+      policy ??
+      (await resolveRepositoryGitPolicy(
+        path,
+        repositoryGitPolicy(path, this.policies),
+      ));
+    const job = candidates.find((candidate) =>
+      this.reusable(candidate, path, branch, current),
+    );
+    if (
+      !job?.evidence ||
+      job.adapterDigest !== (await checksAdapterDigest()) ||
+      !(await managedChecksHook(path)) ||
+      !(await verifyChecksContext(path, branch, job.evidence))
+    )
+      return null;
+    return job.value.id;
+  }
+  async pushWithChecks(
+    id: string,
+    path: string,
+    branch: string,
+  ): Promise<GitPushResult> {
+    const promise = this.checkedPush(id, path, branch);
+    this.pushes.add(promise);
+    try {
+      return await promise;
+    } finally {
+      this.pushes.delete(promise);
+    }
+  }
+  private async checkedPush(
+    id: string,
+    path: string,
+    branch: string,
+  ): Promise<GitPushResult> {
+    this.prune();
+    const job = this.jobs.get(id);
+    if (!job || job.value.path !== path || job.value.branch !== branch)
+      throw new ChecksRequestError(
+        404,
+        'CHECKS_NOT_FOUND',
+        'Check operation not found for this repository and branch.',
+      );
+    if (job.used)
+      throw new ChecksRequestError(
+        409,
+        'CHECK_CONTEXT_MISMATCH',
+        'This check result has already been consumed by a push attempt.',
+      );
+    if (this.closed || this.locks.has(path))
+      throw new ChecksRequestError(
+        409,
+        'CHECKS_BUSY',
+        'Checks or a checked push are already active.',
+      );
+    this.locks.set(path, id);
+    let proof: Awaited<ReturnType<typeof createChecksProof>> | undefined;
+    const startedAt = now();
+    try {
+      const current = await resolveRepositoryGitPolicy(
+        path,
+        repositoryGitPolicy(path, this.policies),
+      );
+      if (
+        !this.reusable(job, path, branch, current) ||
+        !job.evidence ||
+        job.adapterDigest !== (await checksAdapterDigest()) ||
+        !(await managedChecksHook(path)) ||
+        !(await verifyChecksContext(path, branch, job.evidence))
+      )
+        throw new ChecksRequestError(
+          409,
+          'CHECK_CONTEXT_MISMATCH',
+          'Checks are missing, expired, consumed or no longer match this push.',
+        );
+      job.used = true;
+      proof = await createChecksProof(
+        path,
+        branch,
+        job.evidence,
+        this.keys.privateKey,
+        this.keys.publicKey,
+      );
+      job.value.push = {
+        status: 'running',
+        startedAt,
+        completedAt: null,
+        error: null,
+      };
+      const result = await pushRepositoryBranch(
+        path,
+        branch,
+        repositoryGitPolicy(path, this.policies),
+        proof,
+      );
+      job.value.push = {
+        status: result.success ? 'succeeded' : 'failed',
+        startedAt,
+        completedAt: now(),
+        error: result.success
+          ? null
+          : { code: result.code, message: result.error },
+      };
+      return result;
+    } catch (error) {
+      if (job.value.status === 'succeeded')
+        job.value.push = {
+          status: 'failed',
+          startedAt,
+          completedAt: now(),
+          error: {
+            code:
+              error instanceof ChecksRequestError ? error.code : 'PUSH_FAILED',
+            message:
+              error instanceof ChecksRequestError
+                ? error.message
+                : 'Unable to complete the checked push.',
+          },
+        };
+      if (error instanceof ChecksRequestError) throw error;
+      throw new ChecksRequestError(
+        502,
+        'PUSH_FAILED',
+        'Unable to complete the checked push.',
+      );
+    } finally {
+      if (proof) await proof.dispose();
+      if (this.locks.get(path) === id) this.locks.delete(path);
+    }
   }
   private async run(job: Job) {
     if (job.value.status !== 'queued') return;
@@ -288,9 +466,10 @@ export class GitChecksService {
       }
       value.commit = commit;
       for (const check of value.checks) check.commit = commit;
+      job.adapterDigest = await checksAdapterDigest();
       const child = spawn(
         process.execPath,
-        [adapter, '--report-checks', 'origin'],
+        [checksAdapterPath, '--report-checks', 'origin'],
         {
           cwd: value.path,
           detached: process.platform !== 'win32',
@@ -303,6 +482,7 @@ export class GitChecksService {
       let report: 'succeeded' | 'failed' | undefined;
       let failure: PushPolicyCode = 'CHECK_FAILED';
       let invalid = false;
+      let evidence: ChecksEvidence | undefined;
       const protocolFailure = () => {
         invalid = true;
         this.kill(job);
@@ -355,6 +535,16 @@ export class GitChecksService {
               if (!['succeeded', 'failed'].includes(event.status))
                 throw new Error('Invalid completion.');
               report = event.status;
+              if (event.status === 'succeeded') {
+                if (
+                  !event.evidence ||
+                  event.evidence.commit !== commit ||
+                  event.evidence.ref !== `refs/heads/${value.branch}` ||
+                  !/^[a-f0-9]{64}$/.test(event.evidence.policyDigest)
+                )
+                  throw new Error('Invalid check evidence.');
+                evidence = event.evidence;
+              }
               if (event.status === 'failed') {
                 if (
                   ![
@@ -416,6 +606,11 @@ export class GitChecksService {
         this.finish(job, 'failed', 'CHECK_FAILED');
         return;
       }
+      if (!evidence) {
+        this.finish(job, 'failed', 'CHECKS_FAILED');
+        return;
+      }
+      job.evidence = evidence;
       this.finish(job, 'succeeded');
     } catch {
       this.finish(job, 'failed', 'CHECKS_FAILED');

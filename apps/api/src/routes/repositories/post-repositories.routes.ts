@@ -14,10 +14,17 @@ import type { AppConfig } from '../../config.js';
 import { checkDeploymentUrls } from '../../services/deployments/monitoring.service.js';
 import { fetchRepository } from '../../services/git/git.service.js';
 import {
+  ChecksRequestError,
+  type GitChecksService,
+} from '../../services/git/git-checks.service.js';
+import {
   type RepositoryGitPolicies,
   repositoryGitPolicy,
 } from '../../services/git/git-policy.service.js';
-import { pushRepositoryBranch } from '../../services/git/git-push.service.js';
+import {
+  type GitPushResult,
+  pushRepositoryBranch,
+} from '../../services/git/git-push.service.js';
 import { getOutdatedDependencies } from '../../services/packages/outdated.service.js';
 import { findConfiguredRepository } from '../../services/repositories/repositories.service.js';
 import type { RepositoryUrls } from '../../services/repositories/repository-config.service.js';
@@ -26,6 +33,7 @@ export const postRepositoriesRoutes: FastifyPluginAsync<
   Pick<AppConfig, 'scanPaths'> & {
     repositoryUrls: RepositoryUrls;
     repositoryGitPolicies: RepositoryGitPolicies;
+    checks: GitChecksService;
   }
 > = async (app, options) => {
   app.post<{ Body: MonitoringRequest }>(
@@ -79,6 +87,7 @@ export const postRepositoriesRoutes: FastifyPluginAsync<
           properties: {
             path: { type: 'string', minLength: 1, pattern: '\\S' },
             branch: { type: 'string', minLength: 1, pattern: '\\S' },
+            checksId: { type: 'string', format: 'uuid' },
           },
         },
       },
@@ -94,32 +103,65 @@ export const postRepositoriesRoutes: FastifyPluginAsync<
           error: 'Repository not found in configured scan directories.',
         });
       }
-      const result = await pushRepositoryBranch(
-        repository.path,
-        branch,
-        repositoryGitPolicy(repository.path, options.repositoryGitPolicies),
-      );
+      let result: GitPushResult;
+      try {
+        const checksId =
+          request.body.checksId ??
+          (await options.checks.availableCheck(repository.path, branch));
+        result = checksId
+          ? await options.checks.pushWithChecks(
+              checksId,
+              repository.path,
+              branch,
+            )
+          : await pushRepositoryBranch(
+              repository.path,
+              branch,
+              repositoryGitPolicy(
+                repository.path,
+                options.repositoryGitPolicies,
+              ),
+            );
+      } catch (error) {
+        if (error instanceof ChecksRequestError)
+          return reply.code(error.status).send({
+            path: repository.path,
+            branch,
+            success: false,
+            code: error.code,
+            error: error.message,
+          });
+        return reply.code(502).send({
+          path: repository.path,
+          branch,
+          success: false,
+          code: 'PUSH_FAILED',
+          error: 'Unable to complete the push.',
+        });
+      }
       if (!result.success) {
         const status =
-          result.code === 'DIRECT_PUSH_FORBIDDEN'
-            ? 403
-            : result.code === 'INVALID_PUSH_POLICY' ||
-                result.code === 'CHECK_RUNNER_UNAVAILABLE' ||
-                result.code === 'GIT_STATE_UNAVAILABLE'
-              ? 422
-              : result.code === 'INVALID_BRANCH'
-                ? 400
-                : result.code === 'BRANCH_NOT_FOUND'
-                  ? 404
-                  : result.code === 'REMOTE_NOT_FOUND' ||
-                      result.code === 'LOCAL_HOOK_FAILED'
-                    ? 422
-                    : result.code === 'NON_FAST_FORWARD' ||
-                        result.code === 'REMOTE_REJECTED'
-                      ? 409
-                      : result.code === 'TIMEOUT'
-                        ? 504
-                        : 502;
+          result.code === 'CHECK_CONTEXT_MISMATCH'
+            ? 409
+            : result.code === 'DIRECT_PUSH_FORBIDDEN'
+              ? 403
+              : result.code === 'INVALID_PUSH_POLICY' ||
+                  result.code === 'CHECK_RUNNER_UNAVAILABLE' ||
+                  result.code === 'GIT_STATE_UNAVAILABLE'
+                ? 422
+                : result.code === 'INVALID_BRANCH'
+                  ? 400
+                  : result.code === 'BRANCH_NOT_FOUND'
+                    ? 404
+                    : result.code === 'REMOTE_NOT_FOUND' ||
+                        result.code === 'LOCAL_HOOK_FAILED'
+                      ? 422
+                      : result.code === 'NON_FAST_FORWARD' ||
+                          result.code === 'REMOTE_REJECTED'
+                        ? 409
+                        : result.code === 'TIMEOUT'
+                          ? 504
+                          : 502;
         return reply
           .code(status)
           .send({ path: repository.path, branch, ...result });

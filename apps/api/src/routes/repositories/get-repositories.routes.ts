@@ -11,6 +11,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import type { AppConfig } from '../../config.js';
 import { inspectRepositoryBeacon } from '../../services/beacon/repository-beacon.service.js';
 import { getLocalBranches } from '../../services/git/git.service.js';
+import type { GitChecksService } from '../../services/git/git-checks.service.js';
 import { getOriginRemote } from '../../services/git/git-origin.service.js';
 import {
   assessBranchPush,
@@ -43,6 +44,7 @@ export const getRepositoriesRoutes: FastifyPluginAsync<
     repositoryEnvironments: RepositoryEnvironments;
     repositoryConfigurationErrors: RepositoryConfigurationErrors;
     repositoryGitPolicies: RepositoryGitPolicies;
+    checks: GitChecksService;
   }
 > = async (app, options) => {
   const withRepositoryConfiguration = async (
@@ -205,10 +207,20 @@ export const getRepositoriesRoutes: FastifyPluginAsync<
       );
       return {
         path: repository.path,
-        branches: result.branches.map((branch) => ({
-          ...branch,
-          ...assessBranchPush(policy, branch.name),
-        })),
+        branches: await Promise.all(
+          result.branches.map(async (branch) => {
+            const checksId = await options.checks.availableCheck(
+              repository.path,
+              branch.name,
+              policy,
+            );
+            return {
+              ...branch,
+              checksId,
+              ...assessBranchPush(policy, branch.name, true, checksId !== null),
+            };
+          }),
+        ),
       } satisfies BranchesResponse;
     },
   );

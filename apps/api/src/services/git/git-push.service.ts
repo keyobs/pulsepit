@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import type { RepositoryGitPolicy } from '@pulsepit/contracts';
 import { createCommandEnvironment } from '../processes/command-environment.service.js';
+import type { ChecksProof } from './git-checks-proof.service.js';
 import {
   assessBranchPush,
   unconfiguredGitPolicy,
@@ -16,6 +17,7 @@ export type GitPushResult =
   | {
       success: false;
       code:
+        | 'CHECK_CONTEXT_MISMATCH'
         | 'DIRECT_PUSH_FORBIDDEN'
         | 'INVALID_PUSH_POLICY'
         | 'CHECK_RUNNER_UNAVAILABLE'
@@ -36,6 +38,7 @@ export async function pushRepositoryBranch(
   repositoryPath: string,
   branch: string,
   policy: RepositoryGitPolicy = unconfiguredGitPolicy(),
+  proof?: ChecksProof,
 ): Promise<GitPushResult> {
   const deadline = Date.now() + 30_000;
   let pushStarted = false;
@@ -45,6 +48,7 @@ export async function pushRepositoryBranch(
       effectivePolicy,
       branch,
       gitAvailable,
+      proof !== undefined,
     );
     if (pushAssessment.canAttempt) return null;
     const reason = pushAssessment.reasons[0];
@@ -69,6 +73,7 @@ export async function pushRepositoryBranch(
       env: {
         ...createCommandEnvironment('git'),
         LC_ALL: 'C',
+        ...(proof?.environment ?? {}),
       },
     });
   }
@@ -118,6 +123,24 @@ export async function pushRepositoryBranch(
       };
     }
 
+    if (proof) {
+      const urls = (
+        await run(['remote', 'get-url', '--push', '--all', 'origin'])
+      ).stdout
+        .trim()
+        .split('\n');
+      if (
+        proof.branch !== branch ||
+        !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(proof.commit) ||
+        urls.length !== 1
+      )
+        return {
+          success: false,
+          code: 'CHECK_CONTEXT_MISMATCH',
+          error: 'The checked push context is unsupported.',
+        };
+    }
+
     // An explicit refspec selects exactly one local and one remote branch.
     // Disable mirror and automatic tag pushes even if configured locally.
     pushStarted = true;
@@ -129,7 +152,7 @@ export async function pushRepositoryBranch(
       '--no-follow-tags',
       '--',
       'origin',
-      `${ref}:${ref}`,
+      `${proof?.commit ?? ref}:${ref}`,
     ]);
     return { success: true };
   } catch (error) {
@@ -149,6 +172,17 @@ export async function pushRepositoryBranch(
     }
     const failure = error as { stdout?: string; stderr?: string };
     const output = failure.stdout ?? '';
+    if (
+      proof &&
+      /(?:^|\n)PULSEPIT_CHECK_ERROR CHECK_CONTEXT_MISMATCH\r?(?:\n|$)/.test(
+        failure.stderr ?? '',
+      )
+    )
+      return {
+        success: false,
+        code: 'CHECK_CONTEXT_MISMATCH',
+        error: 'The checks no longer match the push context.',
+      };
     if (
       /(?:^|\n)husky - pre-push script failed \(code [1-9]\d*\)\r?(?:\n|$)/.test(
         `${output}\n${failure.stderr ?? ''}`,

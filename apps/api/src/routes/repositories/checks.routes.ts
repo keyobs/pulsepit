@@ -3,7 +3,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import type { AppConfig } from '../../config.js';
 import {
   ChecksRequestError,
-  GitChecksService,
+  type GitChecksService,
 } from '../../services/git/git-checks.service.js';
 import type { RepositoryGitPolicies } from '../../services/git/git-policy.service.js';
 import { findConfiguredRepository } from '../../services/repositories/repositories.service.js';
@@ -12,10 +12,10 @@ const pathProperty = { type: 'string', minLength: 1, pattern: '\\S' };
 export const checksRoutes: FastifyPluginAsync<
   Pick<AppConfig, 'scanPaths'> & {
     repositoryGitPolicies: RepositoryGitPolicies;
+    checks: GitChecksService;
   }
 > = async (app, options) => {
-  const runner = new GitChecksService(options.repositoryGitPolicies);
-  app.addHook('onClose', () => runner.close());
+  const runner = options.checks;
   app.post<{ Body: PushRequest }>(
     '/checks',
     {

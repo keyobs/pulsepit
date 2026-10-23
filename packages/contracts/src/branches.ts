@@ -6,6 +6,7 @@ export const LocalBranch = z.object({
   isCurrent: z.boolean(),
   policy: GitBranchPolicy,
   pushAssessment: PushAssessment,
+  checksId: z.uuid().nullable().optional(),
 });
 
 export type LocalBranch = z.infer<typeof LocalBranch>;

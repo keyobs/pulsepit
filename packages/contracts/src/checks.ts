@@ -64,6 +64,16 @@ export const ChecksOperation = z
     startedAt: z.iso.datetime().nullable(),
     completedAt: z.iso.datetime().nullable(),
     checks: z.array(CheckExecution).min(1),
+    push: z
+      .object({
+        status: z.enum(['running', 'succeeded', 'failed']),
+        startedAt: z.iso.datetime(),
+        completedAt: z.iso.datetime().nullable(),
+        error: z
+          .object({ code: z.string().min(1), message: z.string().min(1) })
+          .nullable(),
+      })
+      .nullable(),
     error: z
       .object({
         code: z.enum([
@@ -78,6 +88,18 @@ export const ChecksOperation = z
   })
   .superRefine((operation, ctx) => {
     const terminal = !['queued', 'running'].includes(operation.status);
+    if (
+      operation.push &&
+      (operation.status !== 'succeeded' ||
+        (operation.push.status === 'running') !==
+          (operation.push.completedAt === null) ||
+        (operation.push.status === 'failed') !==
+          (operation.push.error !== null))
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Inconsistent checked push result.',
+      });
     if (
       terminal !== (operation.completedAt !== null) ||
       (operation.status === 'queued' && operation.startedAt !== null) ||
