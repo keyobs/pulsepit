@@ -1,11 +1,14 @@
 import { execFile } from 'node:child_process';
 import { resolve } from 'node:path';
 import { promisify } from 'node:util';
+import type { RegistryDiagnosticCode } from '@pulsepit/contracts';
 import { createCommandEnvironment } from '../processes/command-environment.service.js';
 import type { OutdatedDependency, OutdatedResult } from './outdated.service.js';
+import { registryDiagnostic } from './registry-diagnostic.service.js';
 
 const execute = promisify(execFile);
 type FailureCode =
+  | RegistryDiagnosticCode
   | 'PACKAGE_MANAGER'
   | 'TIMEOUT'
   | 'COMMAND_FAILED'
@@ -156,8 +159,11 @@ export async function getYarnOutdatedDependencies(
           COREPACK_ENABLE_NETWORK: '0',
         },
       });
+      const registry = registryDiagnostic('yarn', stdout, stderr, false);
+      if (registry) throw new DiagnosticError(registry.code, registry.error);
       return { stdout, stderr, code: 0 };
     } catch (error) {
+      if (error instanceof DiagnosticError) throw error;
       const failure = error as {
         code?: string | number;
         signal?: string;
@@ -169,6 +175,13 @@ export async function getYarnOutdatedDependencies(
           'TIMEOUT',
           'Dependency check timed out after 30 seconds.',
         );
+      const registry = registryDiagnostic(
+        'yarn',
+        failure.stdout ?? '',
+        failure.stderr ?? '',
+        true,
+      );
+      if (registry) throw new DiagnosticError(registry.code, registry.error);
       if (outdated && failure.code === 1 && typeof failure.stdout === 'string')
         return {
           stdout: failure.stdout,

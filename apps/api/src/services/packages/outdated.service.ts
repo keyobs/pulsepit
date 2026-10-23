@@ -1,8 +1,13 @@
 import { execFile } from 'node:child_process';
 import { promisify, stripVTControlCharacters } from 'node:util';
-import type { OutdatedDependency, OutdatedResponse } from '@pulsepit/contracts';
+import type {
+  OutdatedDependency,
+  OutdatedResponse,
+  RegistryDiagnosticCode,
+} from '@pulsepit/contracts';
 import { createCommandEnvironment } from '../processes/command-environment.service.js';
 import { detectPackageManager } from './package-manager.service.js';
+import { registryDiagnostic } from './registry-diagnostic.service.js';
 import { getYarnOutdatedDependencies } from './yarn-outdated.service.js';
 
 const execute = promisify(execFile);
@@ -12,7 +17,12 @@ export type { OutdatedDependency } from '@pulsepit/contracts';
 export type OutdatedResult =
   | Omit<OutdatedResponse, 'path'>
   | {
-      code: 'PACKAGE_MANAGER' | 'TIMEOUT' | 'COMMAND_FAILED' | 'INVALID_OUTPUT';
+      code:
+        | 'PACKAGE_MANAGER'
+        | 'TIMEOUT'
+        | 'COMMAND_FAILED'
+        | 'INVALID_OUTPUT'
+        | RegistryDiagnosticCode;
       error: string;
     };
 
@@ -153,12 +163,20 @@ export async function getOutdatedDependencies(
       encoding: 'utf8',
       env: createCommandEnvironment('package-manager'),
     });
+    const registry = registryDiagnostic(
+      name,
+      name === 'pnpm' ? pnpmJson(result.stdout) : result.stdout,
+      result.stderr,
+      false,
+    );
+    if (registry) return registry;
     output = result.stdout;
   } catch (error) {
     const failure = error as {
       code?: string | number;
       signal?: string;
       stdout?: string;
+      stderr?: string;
     };
     if (failure.signal === 'SIGKILL') {
       return {
@@ -166,6 +184,13 @@ export async function getOutdatedDependencies(
         error: 'Dependency check timed out after 30 seconds.',
       };
     }
+    const registry = registryDiagnostic(
+      name,
+      name === 'pnpm' ? pnpmJson(failure.stdout ?? '') : (failure.stdout ?? ''),
+      failure.stderr ?? '',
+      true,
+    );
+    if (registry) return registry;
     // Both managers exit with 1 for outdated dependencies, but also on errors.
     // Only accept this exit code if stdout contains a valid, non-empty report.
     if (failure.code !== 1 || typeof failure.stdout !== 'string') {
@@ -179,20 +204,6 @@ export async function getOutdatedDependencies(
     }
     output = failure.stdout;
     outdatedExit = true;
-  }
-
-  if (
-    name === 'pnpm' &&
-    outdatedExit &&
-    /^\s*(?:\[ERR_PNPM_FETCH_(?:401|403)\]|ERR_PNPM_FETCH_(?:401|403))(?:\s|$)/mu.test(
-      stripVTControlCharacters(pnpmJson(output)),
-    )
-  ) {
-    return {
-      code: 'COMMAND_FAILED',
-      error:
-        'pnpm could not authenticate with the package registry. Check the registry credentials and package access permissions.',
-    };
   }
 
   try {

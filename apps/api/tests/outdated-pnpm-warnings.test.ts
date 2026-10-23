@@ -112,7 +112,7 @@ test('warnings never hide fatal errors, arbitrary text, truncated or multiple re
     `${launcherWarning}ERR_PNPM_FETCH_500 private-registry-do-not-expose\n${report}`,
     ` WARN  Slow request\n${report.slice(0, -1)}`,
     ` WARN  Slow request\n${report}\n{}`,
-    ` WARN  Slow request\n{"error":{"code":"ERR_PNPM_FETCH_401"}}`,
+    ` WARN  Slow request\n{"error":{"code":"ERR_PNPM_FETCH_500"}}`,
     ` WARN  private-registry-do-not-expose\n`,
   ]) {
     const response = await diagnose(output);
@@ -141,8 +141,13 @@ test('pnpm registry authentication failures return an actionable error without e
       );
       assert.equal(response.statusCode, 502);
       const body = ErrorResponse.parse(response.json());
-      assert.equal(body.code, 'COMMAND_FAILED');
-      assert.match(body.error, /registry credentials/);
+      assert.equal(
+        body.code,
+        code === '401'
+          ? 'REGISTRY_AUTHENTICATION_FAILED'
+          : 'REGISTRY_ACCESS_DENIED',
+      );
+      assert.match(body.error, /registry credential/);
       assert.equal(response.body.includes('private-'), false);
     }
   }

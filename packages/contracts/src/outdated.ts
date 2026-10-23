@@ -1,5 +1,12 @@
 import { z } from 'zod';
 
+export const RegistryDiagnosticCode = z.enum([
+  'REGISTRY_CREDENTIALS_MISSING',
+  'REGISTRY_AUTHENTICATION_FAILED',
+  'REGISTRY_ACCESS_DENIED',
+]);
+export type RegistryDiagnosticCode = z.infer<typeof RegistryDiagnosticCode>;
+
 export const OutdatedRequest = z.object({ path: z.string().min(1) });
 
 export type OutdatedRequest = z.infer<typeof OutdatedRequest>;

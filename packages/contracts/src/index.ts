@@ -44,6 +44,7 @@ export {
   OutdatedDependency,
   OutdatedRequest,
   OutdatedResponse,
+  RegistryDiagnosticCode,
 } from './outdated.js';
 export { PackageResponse } from './package.js';
 export {
