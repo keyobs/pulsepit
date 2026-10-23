@@ -1,4 +1,4 @@
-import type { PushRequest } from '@pulsepit/contracts';
+import type { ListChecksResponse, PushRequest } from '@pulsepit/contracts';
 import type { FastifyPluginAsync } from 'fastify';
 import type { AppConfig } from '../../config.js';
 import {
@@ -16,6 +16,32 @@ export const checksRoutes: FastifyPluginAsync<
   }
 > = async (app, options) => {
   const runner = options.checks;
+  app.get<{ Querystring: { path: string } }>(
+    '/checks',
+    {
+      schema: {
+        querystring: {
+          type: 'object',
+          required: ['path'],
+          properties: { path: pathProperty },
+        },
+      },
+    },
+    async (request, reply) => {
+      const repository = await findConfiguredRepository(
+        request.query.path,
+        options.scanPaths,
+      );
+      if (!repository)
+        return reply.code(404).send({
+          error: 'Repository not found in configured scan directories.',
+        });
+      return {
+        path: repository.path,
+        operations: runner.list(repository.path),
+      } satisfies ListChecksResponse;
+    },
+  );
   app.post<{ Body: PushRequest }>(
     '/checks',
     {

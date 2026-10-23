@@ -123,14 +123,14 @@ export class GitChecksService {
       [...this.jobs.values()].map((job) => structuredClone(job.value)),
     );
   }
-  private prune() {
+  private prune(reserved = 0) {
     for (const [id, job] of this.jobs) {
       if (
         terminal(job.value) &&
         job.value.push?.status !== 'running' &&
         job.value.completedAt &&
         (Date.now() - Date.parse(job.value.completedAt) > 15 * 60_000 ||
-          this.jobs.size >= 100)
+          this.jobs.size > 100 - reserved)
       )
         this.jobs.delete(id);
     }
@@ -248,6 +248,7 @@ export class GitChecksService {
       complete = resolve;
     });
     const job: Job = { value, policy, done, resolve: complete };
+    this.prune(1);
     this.jobs.set(id, job);
     this.locks.set(path, id);
     await this.persist();
@@ -260,6 +261,17 @@ export class GitChecksService {
     this.prune();
     const job = this.jobs.get(id);
     return job?.value.path === path ? structuredClone(job.value) : null;
+  }
+  list(path: string): ChecksOperation[] {
+    this.prune();
+    return [...this.jobs.values()]
+      .map((job) => job.value)
+      .filter((value) => value.path === path)
+      .sort(
+        (a, b) =>
+          b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id),
+      )
+      .map((value) => structuredClone(value));
   }
   private finish(
     job: Job,

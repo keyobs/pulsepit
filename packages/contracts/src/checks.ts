@@ -138,3 +138,19 @@ export const ChecksOperation = z
       });
   });
 export type ChecksOperation = z.infer<typeof ChecksOperation>;
+
+export const ListChecksResponse = z
+  .object({
+    path: z.string().min(1),
+    operations: z.array(ChecksOperation).max(100),
+  })
+  .superRefine((response, ctx) => {
+    if (
+      response.operations.some((operation) => operation.path !== response.path)
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Check operations must belong to the requested repository.',
+      });
+  });
+export type ListChecksResponse = z.infer<typeof ListChecksResponse>;

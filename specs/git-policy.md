@@ -273,3 +273,26 @@ aux branches et ne peuvent jamais autoriser un push dans la nouvelle instance ;
 l'utilisation explicite d'un ancien identifiant donne 409
 `CHECK_CONTEXT_MISMATCH` et demande de nouveaux contrôles. Les contrôles démarrés
 après le redémarrage conservent le mécanisme normal de réutilisation.
+
+## Retrouver les opérations d'un dépôt
+
+`GET /api/repositories/checks?path=…` retourne HTTP 200 et
+`{ path, operations: ChecksOperation[] }`, validable avec `ListChecksResponse`
+exporté par `@pulsepit/contracts`. Le chemin retourné est normalisé comme pour
+les autres routes de dépôt. Un dépôt découvert sans historique retourne un tableau
+vide ; un dépôt absent ou hors périmètre donne 404. Un chemin manquant, vide ou
+composé d'espaces donne 400.
+
+La liste contient uniquement les opérations du dépôt demandé, y compris celles
+en cours et celles restaurées après redémarrage. Elle est triée par `createdAt`
+décroissant, puis par identifiant décroissant en cas d'égalité. Elle utilise la
+rétention existante de quinze minutes et cent opérations pour toute l'instance,
+sans pagination ni nouvelle conservation. Les lectures ne libèrent pas une place
+à la limite de cent : cette place n'est réservée que lors d'un nouveau lancement.
+
+Au chargement du panneau, le frontend peut récupérer les identifiants via cette
+liste, puis utiliser le GET individuel et l'annulation existants pour leur suivi.
+Le résultat de liste est une photographie : actualiser pour voir les évolutions.
+Aucun contrôle ni push n'est lancé par la lecture. Un succès historique n'est
+pas une autorisation de push ; seul le `checksId` proposé par `/branches` décrit
+un résultat actuellement réutilisable, revérifié lors du push.
