@@ -44,7 +44,8 @@ Les identifiants de contrôles ne sont pas des commandes à exécuter.
 
 Une liste de contrôles obligatoires non vide exige un succès récent et réutilisable
 de l'exécuteur Pulsepit décrit ci-dessous ; sinon le push reste bloqué avec
-`CHECK_RUNNER_UNAVAILABLE`.
+un motif précisant l'état des contrôles. `CHECK_RUNNER_UNAVAILABLE` est réservé
+aux limitations de l'exécuteur ou de l'intégration du dépôt.
 `directPush: "allowed"` reste compatible avec cette obligation : la permission
 est conditionnelle, elle ne signifie pas que les contrôles ont déjà réussi.
 Le front utilise `pushAssessment.canAttempt` pour activer l'action.
@@ -296,3 +297,38 @@ Le résultat de liste est une photographie : actualiser pour voir les évolution
 Aucun contrôle ni push n'est lancé par la lecture. Un succès historique n'est
 pas une autorisation de push ; seul le `checksId` proposé par `/branches` décrit
 un résultat actuellement réutilisable, revérifié lors du push.
+
+## Motifs de refus liés aux contrôles
+
+`pushAssessment` conserve sa forme `{ state, canAttempt, reasons }` et ses états.
+Les motifs suivants sont bloquants (`state: blocked`, `canAttempt: false`) ;
+`checksId` reste `null`. Les codes sont exportés dans `PushPolicyCode`.
+
+| Code | Sens et action proposée au frontend |
+| --- | --- |
+| `CHECKS_REQUIRED` | Aucun résultat ou dernière opération annulée/expirée par timeout : lancer de nouveaux contrôles. |
+| `CHECKS_RUNNING` | Des contrôles ou un push contrôlé occupent le dépôt : suivre l'opération et attendre. |
+| `CHECKS_EXPIRED` | Le succès a au moins cinq minutes : relancer les contrôles. |
+| `CHECKS_CONSUMED` | Le résultat a déjà servi à une tentative : vérifier son issue, puis relancer les contrôles avant une nouvelle tentative. |
+| `CHECKS_RESTARTED` | L'opération appartient à une instance précédente de l'API : son historique reste consultable, de nouveaux contrôles sont nécessaires. |
+| `CHECK_CONTEXT_MISMATCH` | Commit, working tree, politique ou adaptateur ayant exécuté les contrôles incompatibles : revoir les changements puis relancer les contrôles. |
+| `CHECK_FAILED` | La dernière opération a échoué : résoudre son échec puis relancer les contrôles. |
+| `CHECK_RUNNER_UNAVAILABLE` | Source de politique/contrôle non pris en charge, script requis indisponible ou adaptateur installé incompatible : corriger l'intégration avant de réessayer. |
+
+Une politique invalide et une interdiction explicite restent prioritaires sur
+l'état des contrôles. Une branche sans contrôles obligatoires garde son évaluation
+habituelle. La présence d'un helper exact est requise pour annoncer des contrôles
+réutilisables ; les hooks personnalisés ne sont pas remplacés.
+
+L'évaluation utilise la dernière opération du dépôt et de la branche, avec le
+même ordre que la liste d'historique. Un échec récent ne fait plus réapparaître
+un succès antérieur. Un identifiant explicite d'une opération plus ancienne est
+également refusé au push avec 409 `CHECK_CONTEXT_MISMATCH`.
+
+`POST /push` sans `checksId` calcule de nouveau ces motifs : les états de contrôles
+bloquants donnent HTTP 409 avec le code correspondant ; une incompatibilité de
+runner reste HTTP 422. Les validations de branche et les interdictions restent
+appliquées. Un identifiant explicitement fourni conserve les erreurs de preuve
+existantes, notamment 409 `CHECK_CONTEXT_MISMATCH` ou `CHECKS_BUSY`. L'affichage
+n'est jamais une autorisation durable : le contexte est toujours revérifié lors
+du push et les hooks restent actifs.

@@ -1,6 +1,9 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import type { RepositoryGitPolicy } from '@pulsepit/contracts';
+import type {
+  PushPolicyReason,
+  RepositoryGitPolicy,
+} from '@pulsepit/contracts';
 import { createCommandEnvironment } from '../processes/command-environment.service.js';
 import type { ChecksProof } from './git-checks-proof.service.js';
 import {
@@ -17,6 +20,12 @@ export type GitPushResult =
   | {
       success: false;
       code:
+        | 'CHECKS_REQUIRED'
+        | 'CHECKS_RUNNING'
+        | 'CHECKS_EXPIRED'
+        | 'CHECKS_CONSUMED'
+        | 'CHECKS_RESTARTED'
+        | 'CHECK_FAILED'
         | 'CHECK_CONTEXT_MISMATCH'
         | 'DIRECT_PUSH_FORBIDDEN'
         | 'INVALID_PUSH_POLICY'
@@ -39,6 +48,7 @@ export async function pushRepositoryBranch(
   branch: string,
   policy: RepositoryGitPolicy = unconfiguredGitPolicy(),
   proof?: ChecksProof,
+  checksReason?: PushPolicyReason,
 ): Promise<GitPushResult> {
   const deadline = Date.now() + 30_000;
   let pushStarted = false;
@@ -48,11 +58,18 @@ export async function pushRepositoryBranch(
       effectivePolicy,
       branch,
       gitAvailable,
-      proof !== undefined,
+      proof !== undefined ? true : (checksReason ?? false),
     );
     if (pushAssessment.canAttempt) return null;
     const reason = pushAssessment.reasons[0];
     switch (reason.code) {
+      case 'CHECKS_REQUIRED':
+      case 'CHECKS_RUNNING':
+      case 'CHECKS_EXPIRED':
+      case 'CHECKS_CONSUMED':
+      case 'CHECKS_RESTARTED':
+      case 'CHECK_FAILED':
+      case 'CHECK_CONTEXT_MISMATCH':
       case 'DIRECT_PUSH_FORBIDDEN':
       case 'INVALID_PUSH_POLICY':
       case 'CHECK_RUNNER_UNAVAILABLE':

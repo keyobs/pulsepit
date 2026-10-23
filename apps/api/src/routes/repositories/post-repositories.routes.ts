@@ -105,9 +105,10 @@ export const postRepositoriesRoutes: FastifyPluginAsync<
       }
       let result: GitPushResult;
       try {
-        const checksId =
-          request.body.checksId ??
-          (await options.checks.availableCheck(repository.path, branch));
+        const assessment = request.body.checksId
+          ? null
+          : await options.checks.assessChecks(repository.path, branch);
+        const checksId = request.body.checksId ?? assessment?.checksId;
         result = checksId
           ? await options.checks.pushWithChecks(
               checksId,
@@ -121,6 +122,8 @@ export const postRepositoriesRoutes: FastifyPluginAsync<
                 repository.path,
                 options.repositoryGitPolicies,
               ),
+              undefined,
+              assessment?.reason ?? undefined,
             );
       } catch (error) {
         if (error instanceof ChecksRequestError)
@@ -140,28 +143,35 @@ export const postRepositoriesRoutes: FastifyPluginAsync<
         });
       }
       if (!result.success) {
-        const status =
-          result.code === 'CHECK_CONTEXT_MISMATCH'
-            ? 409
-            : result.code === 'DIRECT_PUSH_FORBIDDEN'
-              ? 403
-              : result.code === 'INVALID_PUSH_POLICY' ||
-                  result.code === 'CHECK_RUNNER_UNAVAILABLE' ||
-                  result.code === 'GIT_STATE_UNAVAILABLE'
-                ? 422
-                : result.code === 'INVALID_BRANCH'
-                  ? 400
-                  : result.code === 'BRANCH_NOT_FOUND'
-                    ? 404
-                    : result.code === 'REMOTE_NOT_FOUND' ||
-                        result.code === 'LOCAL_HOOK_FAILED'
-                      ? 422
-                      : result.code === 'NON_FAST_FORWARD' ||
-                          result.code === 'REMOTE_REJECTED'
-                        ? 409
-                        : result.code === 'TIMEOUT'
-                          ? 504
-                          : 502;
+        const status = [
+          'CHECK_CONTEXT_MISMATCH',
+          'CHECKS_REQUIRED',
+          'CHECKS_RUNNING',
+          'CHECKS_EXPIRED',
+          'CHECKS_CONSUMED',
+          'CHECKS_RESTARTED',
+          'CHECK_FAILED',
+        ].includes(result.code)
+          ? 409
+          : result.code === 'DIRECT_PUSH_FORBIDDEN'
+            ? 403
+            : result.code === 'INVALID_PUSH_POLICY' ||
+                result.code === 'CHECK_RUNNER_UNAVAILABLE' ||
+                result.code === 'GIT_STATE_UNAVAILABLE'
+              ? 422
+              : result.code === 'INVALID_BRANCH'
+                ? 400
+                : result.code === 'BRANCH_NOT_FOUND'
+                  ? 404
+                  : result.code === 'REMOTE_NOT_FOUND' ||
+                      result.code === 'LOCAL_HOOK_FAILED'
+                    ? 422
+                    : result.code === 'NON_FAST_FORWARD' ||
+                        result.code === 'REMOTE_REJECTED'
+                      ? 409
+                      : result.code === 'TIMEOUT'
+                        ? 504
+                        : 502;
         return reply
           .code(status)
           .send({ path: repository.path, branch, ...result });

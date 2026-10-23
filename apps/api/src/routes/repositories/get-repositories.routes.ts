@@ -209,15 +209,20 @@ export const getRepositoriesRoutes: FastifyPluginAsync<
         path: repository.path,
         branches: await Promise.all(
           result.branches.map(async (branch) => {
-            const checksId = await options.checks.availableCheck(
+            const checks = await options.checks.assessChecks(
               repository.path,
               branch.name,
               policy,
             );
             return {
               ...branch,
-              checksId,
-              ...assessBranchPush(policy, branch.name, true, checksId !== null),
+              checksId: checks.checksId,
+              ...assessBranchPush(
+                policy,
+                branch.name,
+                true,
+                checks.checksId !== null ? true : (checks.reason ?? false),
+              ),
             };
           }),
         ),

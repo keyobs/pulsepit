@@ -4,6 +4,7 @@ import { promisify } from 'node:util';
 import type {
   ChecksOperation,
   PushPolicyCode,
+  PushPolicyReason,
   RepositoryGitPolicy,
 } from '@pulsepit/contracts';
 import { createCommandEnvironment } from '../processes/command-environment.service.js';
@@ -352,40 +353,119 @@ export class GitChecksService {
       JSON.stringify(policy) === JSON.stringify(job.policy)
     );
   }
-  async availableCheck(
+  private latestJob(path: string, branch: string): Job | undefined {
+    return [...this.jobs.values()]
+      .filter((job) => job.value.path === path && job.value.branch === branch)
+      .sort(
+        (a, b) =>
+          b.value.createdAt.localeCompare(a.value.createdAt) ||
+          b.value.id.localeCompare(a.value.id),
+      )[0];
+  }
+  async assessChecks(
     path: string,
     branch: string,
     policy?: RepositoryGitPolicy,
-  ): Promise<string | null> {
+  ): Promise<{ checksId: string | null; reason: PushPolicyReason | null }> {
     this.prune();
-    if (this.closed || this.locks.has(path)) return null;
-    const candidates = [...this.jobs.values()]
-      .reverse()
-      .filter(
-        (job) =>
-          job.value.path === path &&
-          job.value.branch === branch &&
-          job.value.status === 'succeeded' &&
-          !job.used,
-      );
-    if (!candidates.length) return null;
     const current =
       policy ??
       (await resolveRepositoryGitPolicy(
         path,
         repositoryGitPolicy(path, this.policies),
       ));
-    const job = candidates.find((candidate) =>
-      this.reusable(candidate, path, branch, current),
-    );
+    const rule =
+      current.state === 'configured'
+        ? Object.hasOwn(current.branches, branch)
+          ? current.branches[branch]
+          : current.default
+        : null;
+    const refused = (code: PushPolicyReason['code'], message: string) => ({
+      checksId: null,
+      reason: { code, message },
+    });
+    if (!rule?.requiredChecks?.length || rule.directPush === 'forbidden')
+      return { checksId: null, reason: null };
     if (
-      !job?.evidence ||
+      this.closed ||
+      current.source !== 'repository-file' ||
+      rule.requiredChecks.some((id) => !['lint-fix', 'test-run'].includes(id))
+    )
+      return refused(
+        'CHECK_RUNNER_UNAVAILABLE',
+        'The required checks are not supported by this server or policy source.',
+      );
+    if (this.locks.has(path))
+      return refused(
+        'CHECKS_RUNNING',
+        'Checks or a checked push are active for this repository. Wait for completion.',
+      );
+    if (!(await managedChecksHook(path)))
+      return refused(
+        'CHECK_RUNNER_UNAVAILABLE',
+        'The installed pre-push adapter does not support verified check reuse.',
+      );
+    const job = this.latestJob(path, branch);
+    if (!job)
+      return refused(
+        'CHECKS_REQUIRED',
+        'Run the required checks before pushing this branch.',
+      );
+    if (job.restored)
+      return refused(
+        'CHECKS_RESTARTED',
+        'The API restarted after these checks. Run new checks.',
+      );
+    if (job.used)
+      return refused(
+        'CHECKS_CONSUMED',
+        'This check result has already been used for a push attempt. Run new checks.',
+      );
+    if (job.value.status !== 'succeeded') {
+      if (job.value.error?.code === 'CHECK_CONTEXT_MISMATCH')
+        return refused(
+          'CHECK_CONTEXT_MISMATCH',
+          'The checks no longer match the commit, working tree or policy. Review changes and run new checks.',
+        );
+      if (job.value.error?.code === 'CHECK_RUNNER_UNAVAILABLE')
+        return refused(
+          'CHECK_RUNNER_UNAVAILABLE',
+          'A required check script is unavailable.',
+        );
+      if (job.value.error?.code === 'INVALID_PUSH_POLICY')
+        return refused(
+          'INVALID_PUSH_POLICY',
+          'The repository declaration could not be used for these checks.',
+        );
+      return job.value.status === 'failed'
+        ? refused(
+            'CHECK_FAILED',
+            'The latest checks failed. Resolve the failure and run new checks.',
+          )
+        : refused(
+            'CHECKS_REQUIRED',
+            'The latest checks did not complete successfully. Run new checks.',
+          );
+    }
+    if (
+      !job.value.completedAt ||
+      Date.now() - Date.parse(job.value.completedAt) >= 5 * 60_000
+    )
+      return refused(
+        'CHECKS_EXPIRED',
+        'The check result is older than five minutes. Run new checks.',
+      );
+    if (
+      !this.reusable(job, path, branch, current) ||
+      !job.evidence ||
       job.adapterDigest !== (await checksAdapterDigest()) ||
-      !(await managedChecksHook(path)) ||
       !(await verifyChecksContext(path, branch, job.evidence))
     )
-      return null;
-    return job.value.id;
+      return refused(
+        'CHECK_CONTEXT_MISMATCH',
+        'The checks no longer match the commit, working tree or policy. Review changes and run new checks.',
+      );
+    return { checksId: job.value.id, reason: null };
   }
   async pushWithChecks(
     id: string,
@@ -440,6 +520,7 @@ export class GitChecksService {
         repositoryGitPolicy(path, this.policies),
       );
       if (
+        this.latestJob(path, branch) !== job ||
         !this.reusable(job, path, branch, current) ||
         !job.evidence ||
         job.adapterDigest !== (await checksAdapterDigest()) ||
