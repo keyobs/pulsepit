@@ -1,3 +1,4 @@
+import { dirname, join } from 'node:path';
 import type { FastifyPluginAsync } from 'fastify';
 import type { AppConfig } from '../../config.js';
 import { GitChecksService } from '../../services/git/git-checks.service.js';
@@ -15,7 +16,10 @@ import { getRepositoriesRoutes } from './get-repositories.routes.js';
 import { postRepositoriesRoutes } from './post-repositories.routes.js';
 
 export const repositoriesRoutes: FastifyPluginAsync<
-  Pick<AppConfig, 'scanPaths' | 'githubToken' | 'vercelToken'> & {
+  Pick<
+    AppConfig,
+    'scanPaths' | 'configPath' | 'githubToken' | 'vercelToken'
+  > & {
     repositoryUrls: RepositoryUrls;
     repositoryHosting: RepositoryUrls;
     repositoryEnvironments: RepositoryEnvironments;
@@ -23,7 +27,16 @@ export const repositoriesRoutes: FastifyPluginAsync<
     repositoryGitPolicies: RepositoryGitPolicies;
   }
 > = async (app, options) => {
-  const checks = new GitChecksService(options.repositoryGitPolicies);
+  const checks = new GitChecksService(options.repositoryGitPolicies, {
+    historyFile: options.configPath
+      ? join(dirname(options.configPath), 'checks-history.json')
+      : undefined,
+    onHistoryError: () =>
+      app.log.warn(
+        'Check history is unavailable; operations continue in memory.',
+      ),
+  });
+  await checks.restore();
   app.addHook('onClose', () => checks.close());
   app.register(checksRoutes, {
     checks,

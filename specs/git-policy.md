@@ -184,8 +184,9 @@ par processus API. La phase d'exécution est limitée à dix minutes ; annulatio
 expiration et fermeture du serveur arrêtent le groupe de processus sous POSIX.
 Un processus qui se détache volontairement de ce groupe n'est pas isolé par
 cette mesure. Les résultats restent en mémoire quinze minutes, dans une limite
-de cent entrées ; un redémarrage les perd et les identifiants absents valent
-404. Aucun résultat n'est repris automatiquement après redémarrage.
+de cent entrées ; les identifiants absents valent 404. L'historique persiste
+à côté du fichier de configuration (voir ci-dessous), sans reprise d'exécution
+ni réutilisation des contrôles après redémarrage.
 
 Les sorties des scripts sont éliminées. Les transitions arrivent par un canal
 séparé des logs et sont validées ; les tokens API ne sont pas transmis au
@@ -239,3 +240,36 @@ le contrôle de ses hooks et de ses fichiers. Les protections de branche et CI
 côté serveur restent nécessaires. Une modification concurrente après les dernières
 vérifications locales n'est pas isolée ; le commit effectivement transmis reste
 épinglé au SHA contrôlé.
+
+## Historique après redémarrage
+
+L'API démarrée avec son chemin de configuration habituel conserve les photographies
+publiques des opérations dans `checks-history.json`, à côté de `config.json`.
+Les mêmes identifiants restent consultables par `GET /checks/:id?path=…`, dans
+le périmètre des dépôts actuellement découverts et pendant les quinze minutes
+de rétention. Aucune nouvelle route ni liste globale n'est ajoutée.
+
+Le fichier versionné est limité à cent opérations et 4 Mio, validé au chargement,
+écrit en mode 0600 par remplacement atomique et par écritures sérialisées dans
+l'instance API. Une seule instance doit utiliser ce fichier. Un fichier absent
+est normal ; un fichier invalide, inaccessible, trop volumineux ou un lien
+symbolique observé est ignoré avec un avertissement sans contenu privé. Un échec
+d'écriture conserve le fonctionnement en mémoire. Un serveur construit sans
+`configPath`, notamment dans les tests, conserve son stockage en mémoire.
+
+Au redémarrage, une opération `queued` ou `running` devient `cancelled`, avec
+`error.code: CHECKS_INTERRUPTED` ; ses contrôles encore actifs deviennent aussi
+`cancelled`. Un push encore marqué `running` devient `failed` avec
+`push.error.code: PUSH_INTERRUPTED`. Cela signifie que le suivi a été interrompu,
+pas que Git a nécessairement refusé le push : vérifier l'état distant avant de
+réessayer. Ces états de récupération sont enregistrés, sans relancer de processus. Ils
+concernent le suivi : un arrêt brutal de l'API peut laisser survivre un processus
+enfant, contrairement à la fermeture normale qui arrête les contrôles actifs.
+
+Seuls les objets publics `ChecksOperation` sont stockés : aucune preuve, clé,
+empreinte interne, politique privée ou sortie brute de script. Les résultats
+restaurés sont toujours consultatifs. Ils n'ajoutent pas de `checksId` disponible
+aux branches et ne peuvent jamais autoriser un push dans la nouvelle instance ;
+l'utilisation explicite d'un ancien identifiant donne 409
+`CHECK_CONTEXT_MISMATCH` et demande de nouveaux contrôles. Les contrôles démarrés
+après le redémarrage conservent le mécanisme normal de réutilisation.

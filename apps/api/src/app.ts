@@ -23,6 +23,7 @@ export function buildApp(
   app.register(repositoriesRoutes, {
     prefix: '/api/repositories',
     scanPaths: config.scanPaths,
+    configPath: config.configPath,
     githubToken: config.githubToken,
     vercelToken: config.vercelToken,
     repositoryUrls,

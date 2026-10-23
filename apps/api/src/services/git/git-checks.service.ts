@@ -7,6 +7,7 @@ import type {
   RepositoryGitPolicy,
 } from '@pulsepit/contracts';
 import { createCommandEnvironment } from '../processes/command-environment.service.js';
+import { GitChecksHistory } from './git-checks-history.service.js';
 import {
   type ChecksEvidence,
   checksAdapterDigest,
@@ -18,6 +19,7 @@ import {
 import {
   type RepositoryGitPolicies,
   repositoryGitPolicy,
+  unconfiguredGitPolicy,
   validateGitPolicyBranchName,
 } from './git-policy.service.js';
 import { resolveRepositoryGitPolicy } from './git-policy-source.service.js';
@@ -48,6 +50,7 @@ type Job = {
   evidence?: ChecksEvidence;
   adapterDigest?: string;
   used?: boolean;
+  restored?: boolean;
 };
 
 export class GitChecksService {
@@ -56,10 +59,70 @@ export class GitChecksService {
   private closed = false;
   private keys = generateKeyPairSync('ed25519');
   private pushes = new Set<Promise<GitPushResult>>();
+  private history?: GitChecksHistory;
   constructor(
     private policies: RepositoryGitPolicies = {},
-    private options: { timeoutMs?: number } = {},
-  ) {}
+    private options: {
+      timeoutMs?: number;
+      historyFile?: string;
+      onHistoryError?: () => void;
+    } = {},
+  ) {
+    if (options.historyFile)
+      this.history = new GitChecksHistory(
+        options.historyFile,
+        options.onHistoryError,
+      );
+  }
+  async restore() {
+    if (!this.history) return;
+    const operations = await this.history.load();
+    for (const value of operations) {
+      if (this.jobs.has(value.id)) continue;
+      if (!terminal(value)) {
+        value.status = 'cancelled';
+        value.completedAt = now();
+        value.error = {
+          code: 'CHECKS_INTERRUPTED',
+          message: 'Checks were interrupted by an API restart. Run new checks.',
+        };
+        for (const check of value.checks) {
+          if (['pending', 'running'].includes(check.status)) {
+            check.status = 'cancelled';
+            check.completedAt = value.completedAt;
+          }
+        }
+      }
+      if (value.push?.status === 'running') {
+        value.push = {
+          ...value.push,
+          status: 'failed',
+          completedAt: now(),
+          error: {
+            code: 'PUSH_INTERRUPTED',
+            message:
+              'Push tracking was interrupted. Verify the remote state before retrying.',
+          },
+        };
+      }
+      this.jobs.set(value.id, {
+        value,
+        policy: unconfiguredGitPolicy(),
+        done: Promise.resolve(),
+        resolve: () => {},
+        used: true,
+        restored: true,
+      });
+    }
+    this.prune();
+    if (operations.length) await this.persist();
+  }
+  private persist(): Promise<void> {
+    if (!this.history) return Promise.resolve();
+    return this.history.save(
+      [...this.jobs.values()].map((job) => structuredClone(job.value)),
+    );
+  }
   private prune() {
     for (const [id, job] of this.jobs) {
       if (
@@ -187,6 +250,7 @@ export class GitChecksService {
     const job: Job = { value, policy, done, resolve: complete };
     this.jobs.set(id, job);
     this.locks.set(path, id);
+    await this.persist();
     setImmediate(() => {
       void this.run(job);
     });
@@ -226,6 +290,7 @@ export class GitChecksService {
         check.status = status === 'timed_out' ? 'timed_out' : 'cancelled';
         check.completedAt = job.value.completedAt;
       }
+    void this.persist();
   }
   private kill(job: Job) {
     if (!job.child?.pid) return;
@@ -256,6 +321,7 @@ export class GitChecksService {
       this.cancel(job.value.id, job.value.path);
     await Promise.all([...this.jobs.values()].map((job) => job.done));
     await Promise.allSettled([...this.pushes]);
+    await this.history?.flush();
   }
   private reusable(
     job: Job,
@@ -335,6 +401,12 @@ export class GitChecksService {
         'CHECKS_NOT_FOUND',
         'Check operation not found for this repository and branch.',
       );
+    if (job.restored)
+      throw new ChecksRequestError(
+        409,
+        'CHECK_CONTEXT_MISMATCH',
+        'This check result belongs to a previous API instance. Run new checks.',
+      );
     if (job.used)
       throw new ChecksRequestError(
         409,
@@ -381,6 +453,7 @@ export class GitChecksService {
         completedAt: null,
         error: null,
       };
+      await this.persist();
       const result = await pushRepositoryBranch(
         path,
         branch,
@@ -418,6 +491,7 @@ export class GitChecksService {
         'Unable to complete the checked push.',
       );
     } finally {
+      await this.persist();
       if (proof) await proof.dispose();
       if (this.locks.get(path) === id) this.locks.delete(path);
     }
@@ -427,6 +501,7 @@ export class GitChecksService {
     const value = job.value;
     value.status = 'running';
     value.startedAt = now();
+    void this.persist();
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       const current = await resolveRepositoryGitPolicy(
@@ -531,6 +606,7 @@ export class GitChecksService {
               check.status = event.status;
               if (event.status === 'running') check.startedAt = now();
               else check.completedAt = now();
+              void this.persist();
             } else {
               if (!['succeeded', 'failed'].includes(event.status))
                 throw new Error('Invalid completion.');

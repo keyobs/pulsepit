@@ -78,6 +78,7 @@ export const ChecksOperation = z
       .object({
         code: z.enum([
           ...PushPolicyCode.options,
+          'CHECKS_INTERRUPTED',
           'CHECKS_TIMEOUT',
           'CHECKS_CANCELLED',
           'CHECKS_FAILED',
