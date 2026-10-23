@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { promisify, stripVTControlCharacters } from 'node:util';
 import type { OutdatedDependency, OutdatedResponse } from '@pulsepit/contracts';
 import { createCommandEnvironment } from '../processes/command-environment.service.js';
 import { detectPackageManager } from './package-manager.service.js';
@@ -20,11 +20,26 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+// Older pnpm can surround JSON with registry warnings on stdout.
+function pnpmJson(output: string): string {
+  const lines = output.split(/\r?\n/);
+  const ancillary = (line: string) =>
+    !line.trim() ||
+    /^\s*(?:WARN|\[WARN\])(?:\s|$)/u.test(stripVTControlCharacters(line));
+  let start = 0;
+  let end = lines.length;
+  while (start < end && ancillary(lines[start])) start++;
+  while (end > start && ancillary(lines[end - 1])) end--;
+  return lines.slice(start, end).join('\n');
+}
+
 function parseDependencies(
   output: string,
   manager: 'npm' | 'pnpm',
 ): OutdatedDependency[] {
-  const data: unknown = JSON.parse(output);
+  const data: unknown = JSON.parse(
+    manager === 'pnpm' ? pnpmJson(output) : output,
+  );
   if (!isObject(data)) throw new Error('Invalid dependency report.');
 
   const dependencies: OutdatedDependency[] = [];
