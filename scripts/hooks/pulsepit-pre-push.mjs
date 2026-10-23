@@ -23,8 +23,10 @@ function printInfo(message) {
 const limit = 64 * 1024;
 const scripts = { 'lint-fix': 'lint:fix', 'test-run': 'test:run' };
 class PushPolicyError extends Error {}
-function reject(message) {
-  throw new PushPolicyError(message);
+function reject(message, code = 'INVALID_PUSH_POLICY') {
+  const error = new PushPolicyError(message);
+  error.code = code;
+  throw error;
 }
 function git(...args) {
   return execFileSync('git', args, {
@@ -179,7 +181,7 @@ function runScript(manager, script) {
   });
   return result.status === 0 && !result.error && !result.signal;
 }
-export function runPrePush(remote, input) {
+export function runPrePush(remote, input, report = () => {}) {
   const initial = declaration();
   if (remote !== initial.policy.remote)
     reject('No push policy is declared for this remote.');
@@ -206,7 +208,10 @@ export function runPrePush(remote, input) {
     manifest.scripts[name].trim().length > 0;
   for (const id of required) {
     if (!Object.hasOwn(scripts, id) || !hasScript(scripts[id]))
-      reject('A required check has no supported package script.');
+      reject(
+        'A required check has no supported package script.',
+        'CHECK_RUNNER_UNAVAILABLE',
+      );
   }
   let context;
   function verifyContext() {
@@ -218,6 +223,7 @@ export function runPrePush(remote, input) {
     )
       reject(
         'The tested commit or working tree changed. Review and commit changes before pushing.',
+        'CHECK_CONTEXT_MISMATCH',
       );
   }
   if (checkedUpdates.length) {
@@ -233,34 +239,66 @@ export function runPrePush(remote, input) {
     )
       reject(
         'Required checks must run on the current branch and pushed commit.',
+        'CHECK_CONTEXT_MISMATCH',
       );
     verifyContext();
   }
   const manager = packageManager();
   if (hasScript('lint:fix')) {
     printInfo('Running lint fix before push...');
-    if (!runScript(manager, 'lint:fix')) reject('Lint failed. Push aborted.');
+    report({ checkId: 'lint-fix', status: 'running', required: true });
+    const passed = runScript(manager, 'lint:fix');
+    report({
+      checkId: 'lint-fix',
+      status: passed ? 'passed' : 'failed',
+      required: true,
+    });
+    if (!passed) reject('Lint failed. Push aborted.', 'CHECK_FAILED');
     verifyContext();
   }
   if (hasScript('test:run')) {
     printInfo('Running tests before push...');
-    if (!runScript(manager, 'test:run')) {
+    report({
+      checkId: 'test-run',
+      status: 'running',
+      required: required.has('test-run'),
+    });
+    const passed = runScript(manager, 'test:run');
+    report({
+      checkId: 'test-run',
+      status: passed ? 'passed' : 'failed',
+      required: required.has('test-run'),
+    });
+    if (!passed) {
       if (required.has('test-run'))
-        reject('Required tests failed. Push aborted.');
+        reject('Required tests failed. Push aborted.', 'CHECK_FAILED');
       printError('Tests failed; this branch has no mandatory test check.');
     }
   }
   verifyContext();
   if (declaration().digest !== initial.digest)
-    reject('The push policy changed during checks. Retry after reviewing it.');
+    reject(
+      'The push policy changed during checks. Retry after reviewing it.',
+      'CHECK_CONTEXT_MISMATCH',
+    );
 }
 if (
   process.argv[1] &&
   resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 ) {
+  const reporting = process.argv[2] === '--report-checks';
+  const report = reporting
+    ? (event) => writeSync(3, `${JSON.stringify(event)}\n`)
+    : () => {};
   try {
-    runPrePush(process.argv[2], boundedRead(0));
+    runPrePush(process.argv[reporting ? 3 : 2], boundedRead(0), report);
+    report({ status: 'succeeded' });
   } catch (error) {
+    report({
+      status: 'failed',
+      code:
+        error instanceof PushPolicyError ? error.code : 'INVALID_PUSH_POLICY',
+    });
     printError(
       error instanceof PushPolicyError
         ? error.message

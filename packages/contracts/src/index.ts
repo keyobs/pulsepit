@@ -1,4 +1,5 @@
 export { BranchesResponse, LocalBranch } from './branches.js';
+export { CheckExecution, CheckStatus, ChecksOperation } from './checks.js';
 export {
   DeploymentCommitComparison,
   DeploymentEnvironment,

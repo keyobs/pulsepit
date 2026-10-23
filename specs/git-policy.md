@@ -151,3 +151,49 @@ un hook ne constitue pas une preuve utilisable par son futur exécuteur.
 La copie du helper et le hook sont versionnés avec la déclaration dans le dépôt
 cible. Si un outil de génération de hooks les remplace, leur intégration doit
 être conservée dans sa configuration ; Pulsepit ne réécrit pas les hooks au scan.
+
+## Contrôles longs depuis l'API
+
+L'exécuteur backend lance le même flow de contrôles que l'adaptateur, sans
+appeler `git push` ni exécuter le hook pre-push installé. Il utilise le script
+canonique livré avec Pulsepit ; la copie installée dans izeetok n'a pas besoin
+d'être remplacée pour cette étape. Aucun contrôle n'est lancé au scan.
+
+- `POST /api/repositories/checks`, body `{ "path": "…", "branch": "develop" }` :
+  HTTP 202 et objet `ChecksOperation`, avec en-tête `Location` pour le suivi.
+- `GET /api/repositories/checks/:id?path=…` : photographie de l'opération.
+- `POST /api/repositories/checks/:id/cancel?path=…` : annulation idempotente.
+
+Le chemin doit toujours désigner un dépôt découvert et être celui de
+l'opération. Aucun paramètre de commande, d'environnement ou de contournement
+n'est accepté. Le premier exécuteur exige une déclaration `repository-file`
+avec des contrôles obligatoires pris en charge (`lint-fix`, `test-run`). Une
+branche interdite est refusée avant création d'opération.
+
+États d'opération : `queued`, `running`, `succeeded`, `failed`, `cancelled`,
+`timed_out`. Chaque contrôle expose `checkId`, `required`, `status`, `commit`,
+`startedAt`, `completedAt`. L'opération expose aussi `id`, `path`, `branch`,
+`commit`, `createdAt`, ses dates et une erreur assainie nullable. Les champs de
+date inconnus restent `null`. Le lint du flow est bloquant lorsqu'il existe,
+même si la liste déclarée ne contenait que les tests.
+
+Un seul contrôle d'opération est actif par dépôt, deux opérations au maximum
+par processus API. La phase d'exécution est limitée à dix minutes ; annulation,
+expiration et fermeture du serveur arrêtent le groupe de processus sous POSIX.
+Un processus qui se détache volontairement de ce groupe n'est pas isolé par
+cette mesure. Les résultats restent en mémoire quinze minutes, dans une limite
+de cent entrées ; un redémarrage les perd et les identifiants absents valent
+404. Aucun résultat n'est repris automatiquement après redémarrage.
+
+Les sorties des scripts sont éliminées. Les transitions arrivent par un canal
+séparé des logs et sont validées ; les tokens API ne sont pas transmis au
+processus enfant. Les contrôles restent du code local exécuté avec les droits
+du compte : ce dispositif n'est pas une sandbox.
+
+**Une opération réussie ne déclenche pas et n'autorise pas encore un push.**
+Elle décrit les contrôles effectués pour son SHA. Le push actuel conserve
+`CHECK_RUNNER_UNAVAILABLE` pour les branches à contrôles obligatoires : sa suite
+devra associer cette preuve au contexte effectif dans le hook, pour éviter de
+relancer les tests ou de réutiliser un résultat périmé. Le front peut proposer
+une action séparée de lancement/suivi des contrôles sans changer le bouton de
+push existant.
