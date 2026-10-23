@@ -1,0 +1,33 @@
+.pp-checks-status {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+
+  .pp-checks-status-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pp-checks-status-branch {
+    font-family: var(--font-mono);
+  }
+
+  .pp-checks-status-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .pp-checks-status-error {
+    margin: 0;
+    color: var(--muted);
+  }
+}
