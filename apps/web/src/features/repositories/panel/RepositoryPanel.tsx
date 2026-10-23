@@ -3,6 +3,7 @@ import { PlaceholderBox } from '@components/placeholderBox/PlaceholderBox';
 import { Tabs } from '@components/tabs/Tabs';
 import { PANEL_TABS, type PanelTabId } from '@constants/panelTabs';
 import { useState } from 'react';
+import { BeaconTab } from './beaconTab/BeaconTab';
 import { DependenciesTab } from './dependenciesTab/DependenciesTab';
 import { DeploymentTab } from './deploymentTab/DeploymentTab';
 import { GitTab } from './gitTab/GitTab';
@@ -18,6 +19,7 @@ const TAB_CONTENT: Record<
 > = {
   git: (repository) => <GitTab repository={repository} />,
   dependencies: (repository) => <DependenciesTab repository={repository} />,
+  beacon: (repository) => <BeaconTab repository={repository} />,
   deployment: (repository) => <DeploymentTab repository={repository} />,
   errors: () => (
     <PlaceholderBox title="Monitoring des erreurs" badge="v2">
