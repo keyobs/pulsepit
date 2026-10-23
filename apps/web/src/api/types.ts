@@ -1,6 +1,8 @@
 // Les features importent les types du contrat d'ici, jamais directement du package.
 export type {
   BranchesResponse,
+  CheckExecution,
+  ChecksOperation,
   DeploymentCheck,
   DeploymentCommitComparison,
   DeploymentEnvironment,

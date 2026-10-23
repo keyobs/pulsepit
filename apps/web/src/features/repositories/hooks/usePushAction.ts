@@ -11,10 +11,10 @@ export function usePushAction(path: string) {
   const { list } = useRepositoriesContext();
   const [isPushing, setIsPushing] = useState(false);
 
-  const push = async (branch: string) => {
+  const push = async (branch: string, checksId?: string) => {
     setIsPushing(true);
     try {
-      await pushBranch(path, branch);
+      await pushBranch(path, branch, checksId);
       showToast(`${branch} poussée vers origin : ${repositoryName(path)}`);
       void list.reload();
     } catch (error) {

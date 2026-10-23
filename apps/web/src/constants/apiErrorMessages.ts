@@ -16,10 +16,19 @@ export const API_ERROR_MESSAGES: Record<string, string> = {
   INVALID_PUSH_POLICY: 'Politique de push invalide : push bloqué.',
   CHECK_RUNNER_UNAVAILABLE:
     'Des contrôles sont requis mais le serveur ne peut pas les exécuter.',
-  CHECK_CONTEXT_MISMATCH:
-    'Le contexte local ne permet pas de contrôler cette branche.',
-  CHECK_FAILED: 'Les contrôles requis ont échoué : aucun push lancé.',
   GIT_STATE_UNAVAILABLE: "L'état Git est illisible : push impossible.",
+  CHECKS_BUSY: 'Des contrôles ou un push sont déjà en cours sur ce dépôt.',
+  CHECKS_CAPACITY: 'Trop de contrôles en cours : réessayer plus tard.',
+  CHECKS_NOT_FOUND: 'Ces contrôles sont introuvables ou expirés.',
+  CHECKS_INTERRUPTED:
+    "Suivi interrompu par un redémarrage de l'API : relancer les contrôles.",
+  CHECKS_FAILED: 'Les contrôles requis ont échoué.',
+  CHECKS_TIMEOUT: 'Les contrôles ont dépassé leur délai.',
+  CHECKS_CANCELLED: 'Les contrôles ont été annulés.',
+  PUSH_INTERRUPTED:
+    "Suivi du push interrompu : vérifier l'état du remote avant de réessayer.",
+  CHECK_CONTEXT_MISMATCH:
+    'Le contexte local a changé ou les contrôles ont expiré : relancer les contrôles.',
   PUSH_FAILED: 'Le push a échoué.',
   BRANCHES_FAILED: 'Impossible de lister les branches locales.',
   PACKAGE_MANAGER:

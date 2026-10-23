@@ -1,6 +1,7 @@
 import { LIST_REQUEST_TIMEOUT_MS } from '@constants/api';
 import {
   BranchesResponse,
+  ChecksOperation,
   DeploymentsResponse,
   FetchResponse,
   ListRepositoriesResponse,
@@ -30,10 +31,10 @@ export const fetchRepository = (path: string) =>
     schema: FetchResponse,
   });
 
-export const pushBranch = (path: string, branch: string) =>
+export const pushBranch = (path: string, branch: string, checksId?: string) =>
   apiRequest(`${BASE}/push`, {
     method: 'POST',
-    body: { path, branch },
+    body: checksId ? { path, branch, checksId } : { path, branch },
     schema: PushResponse,
   });
 
@@ -74,3 +75,23 @@ export const getWorkflows = (path: string) =>
 
 export const getOrigin = (path: string) =>
   apiRequest(`${BASE}/origin`, { query: { path }, schema: OriginResponse });
+
+export const startChecks = (path: string, branch: string) =>
+  apiRequest(`${BASE}/checks`, {
+    method: 'POST',
+    body: { path, branch },
+    schema: ChecksOperation,
+  });
+
+export const getChecks = (path: string, id: string) =>
+  apiRequest(`${BASE}/checks/${id}`, {
+    query: { path },
+    schema: ChecksOperation,
+  });
+
+export const cancelChecks = (path: string, id: string) =>
+  apiRequest(`${BASE}/checks/${id}/cancel`, {
+    method: 'POST',
+    query: { path },
+    schema: ChecksOperation,
+  });

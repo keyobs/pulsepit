@@ -59,6 +59,22 @@ describe('repositories api', () => {
     expect(lastCall().init.body).toBe(JSON.stringify({ path: PATH }));
   });
 
+  it('sends checksId with a controlled push', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({
+        path: PATH,
+        branch: 'develop',
+        remote: 'origin',
+        success: true,
+      }),
+    );
+    const id = '3f1b1f0e-6d0e-4a52-9d57-0f7b8d8f4c11';
+    await pushBranch(PATH, 'develop', id);
+    expect(lastCall().init.body).toBe(
+      JSON.stringify({ path: PATH, branch: 'develop', checksId: id }),
+    );
+  });
+
   it('pushes a branch', async () => {
     fetchMock.mockResolvedValue(
       jsonResponse({
