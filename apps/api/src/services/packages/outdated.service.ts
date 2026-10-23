@@ -20,9 +20,22 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-// Older pnpm can surround JSON with registry warnings on stdout.
+// pnpm can surround JSON with registry or native-launcher warnings on stdout.
 function pnpmJson(output: string): string {
   const lines = output.split(/\r?\n/);
+  const launcherWarning = [
+    'pnpm is running through Node.js because the script that installs its native binary was skipped.',
+    'Reinstall pnpm with its build scripts allowed to run the binary directly.',
+  ];
+  // Only discard the complete, known launcher message at the start of stdout.
+  // Arbitrary text and fatal errors must still invalidate the report.
+  if (
+    launcherWarning.every(
+      (line, index) =>
+        stripVTControlCharacters(lines[index] ?? '').trim() === line,
+    )
+  )
+    lines.splice(0, launcherWarning.length);
   const ancillary = (line: string) =>
     !line.trim() ||
     /^\s*(?:WARN|\[WARN\])(?:\s|$)/u.test(stripVTControlCharacters(line));
@@ -166,6 +179,20 @@ export async function getOutdatedDependencies(
     }
     output = failure.stdout;
     outdatedExit = true;
+  }
+
+  if (
+    name === 'pnpm' &&
+    outdatedExit &&
+    /^\s*(?:\[ERR_PNPM_FETCH_(?:401|403)\]|ERR_PNPM_FETCH_(?:401|403))(?:\s|$)/mu.test(
+      stripVTControlCharacters(pnpmJson(output)),
+    )
+  ) {
+    return {
+      code: 'COMMAND_FAILED',
+      error:
+        'pnpm could not authenticate with the package registry. Check the registry credentials and package access permissions.',
+    };
   }
 
   try {
