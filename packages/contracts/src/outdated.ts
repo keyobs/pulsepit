@@ -9,6 +9,7 @@ export const RegistryDiagnosticCode = z.enum([
   'REGISTRY_TLS_FAILED',
   'REGISTRY_REQUEST_TIMEOUT',
   'REGISTRY_UNAVAILABLE',
+  'REGISTRY_RATE_LIMITED',
 ]);
 export type RegistryDiagnosticCode = z.infer<typeof RegistryDiagnosticCode>;
 

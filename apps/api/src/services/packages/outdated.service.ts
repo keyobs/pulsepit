@@ -24,6 +24,7 @@ export type OutdatedResult =
         | 'INVALID_OUTPUT'
         | RegistryDiagnosticCode;
       error: string;
+      resetAt?: string;
     };
 
 function isObject(value: unknown): value is Record<string, unknown> {

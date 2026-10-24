@@ -19,6 +19,7 @@ schéma et type par `@pulsepit/contracts`.
 | `REGISTRY_TLS_FAILED` | Vérification du certificat impossible. Vérifier la chaîne de confiance, les certificats, l'horloge et le proxy. |
 | `REGISTRY_REQUEST_TIMEOUT` | Une requête du gestionnaire au registre a expiré. Vérifier la connectivité puis réessayer plus tard. |
 | `REGISTRY_UNAVAILABLE` | Une requête retourne HTTP 5xx ; le registre ou un intermédiaire peut être indisponible. Réessayer plus tard. |
+| `REGISTRY_RATE_LIMITED` | Le registre ou un intermédiaire limite les requêtes (HTTP 429). Attendre avant de relancer ; utiliser `resetAt` lorsqu’il est disponible. |
 
 Les messages d'identifiants manquants ou d'authentification refusée rappellent
 de redémarrer l'API si son `.env` a changé. Le frontend
@@ -57,3 +58,32 @@ URL de registre, nom de compte, chemin de configuration privé, en-tête, token
 ou valeur de variable. Les flux servent uniquement à la classification en mémoire,
 sans ajout de logs. Le filtrage de l'environnement enfant, les commandes, les
 scripts désactivés et les bornes de délai et de sortie restent inchangés.
+
+## Limitation de débit et délai de reprise
+
+Les codes npm `E429`, pnpm `ERR_PNPM_FETCH_429` et les erreurs de requête Yarn
+signalant HTTP 429 produisent `REGISTRY_RATE_LIMITED`, toujours en HTTP 502.
+L'API signale ainsi un échec amont ; elle n'annonce pas sa propre limite de débit.
+
+Le champ optionnel existant `ErrorResponse.resetAt` est une date ISO UTC, ajoutée
+uniquement si l'objet d'erreur structuré qui signale le 429 contient un objet
+`headers` avec un seul champ `Retry-After` (nom insensible à la casse). Le lecteur
+accepte une chaîne contenant un entier décimal non négatif en secondes ou une
+date HTTP canonique IMF-fixdate. Les secondes sont ajoutées à l'heure de lecture
+du diagnostic ; une date HTTP est conservée comme échéance absolue. Le zéro est
+accepté. Les dates passées, valeurs invalides, tableaux, champs ambigus, sauts de
+ligne et dates non représentables en ISO à quatre chiffres sont ignorés.
+
+Les en-têtes bruts ne sont jamais renvoyés. Une simple ligne `Retry-After` dans
+un log n'est pas associée arbitrairement à une erreur ; aucun délai n'est lu dans
+une autre erreur ou inventé depuis le seul code 429. Les sorties courantes des
+gestionnaires ne publient souvent pas les en-têtes : dans ce cas `resetAt` est
+absent, même si le 429 est reconnu. Aucun appel réseau supplémentaire n'est fait
+pour tenter de récupérer cette information.
+
+Le frontend peut afficher l'heure de reprise si elle est connue et une invitation
+à patienter sinon. Il ne doit pas interpréter cette heure comme la garantie
+qu'une requête suivante réussira. Aucune nouvelle temporisation, conservation de
+quota, attente ou relance automatique n'est ajoutée à cette étape. Les politiques
+de retry internes des gestionnaires et la limite globale de trente secondes
+restent inchangées.

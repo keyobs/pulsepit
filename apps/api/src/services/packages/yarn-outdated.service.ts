@@ -18,6 +18,7 @@ class DiagnosticError extends Error {
   constructor(
     public code: FailureCode,
     message: string,
+    public resetAt?: string,
   ) {
     super(message);
   }
@@ -160,7 +161,12 @@ export async function getYarnOutdatedDependencies(
         },
       });
       const registry = registryDiagnostic('yarn', stdout, stderr, false);
-      if (registry) throw new DiagnosticError(registry.code, registry.error);
+      if (registry)
+        throw new DiagnosticError(
+          registry.code,
+          registry.error,
+          registry.resetAt,
+        );
       return { stdout, stderr, code: 0 };
     } catch (error) {
       if (error instanceof DiagnosticError) throw error;
@@ -181,7 +187,12 @@ export async function getYarnOutdatedDependencies(
         failure.stderr ?? '',
         true,
       );
-      if (registry) throw new DiagnosticError(registry.code, registry.error);
+      if (registry)
+        throw new DiagnosticError(
+          registry.code,
+          registry.error,
+          registry.resetAt,
+        );
       if (outdated && failure.code === 1 && typeof failure.stdout === 'string')
         return {
           stdout: failure.stdout,
@@ -310,7 +321,11 @@ export async function getYarnOutdatedDependencies(
     };
   } catch (error) {
     if (error instanceof DiagnosticError)
-      return { code: error.code, error: error.message };
+      return {
+        code: error.code,
+        error: error.message,
+        ...(error.resetAt === undefined ? {} : { resetAt: error.resetAt }),
+      };
     return {
       code: 'INVALID_OUTPUT',
       error: 'Yarn did not return a valid dependency report.',

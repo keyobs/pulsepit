@@ -3,6 +3,8 @@ import type { RegistryDiagnosticCode } from '@pulsepit/contracts';
 
 type Manager = 'npm' | 'pnpm' | 'yarn';
 const messages: Record<RegistryDiagnosticCode, string> = {
+  REGISTRY_RATE_LIMITED:
+    'The package registry rate limit was reached (HTTP 429). Wait before running another diagnostic.',
   REGISTRY_DNS_FAILED:
     'A hostname used to reach the package registry could not be resolved. Check DNS, network, VPN and proxy configuration.',
   REGISTRY_CONNECTION_FAILED:
@@ -67,6 +69,7 @@ function transportError(message: string): RegistryDiagnosticCode | null {
 function responseCode(
   status: string | undefined,
 ): RegistryDiagnosticCode | null {
+  if (status === '429') return 'REGISTRY_RATE_LIMITED';
   if (status === '401') return 'REGISTRY_AUTHENTICATION_FAILED';
   if (status === '403') return 'REGISTRY_ACCESS_DENIED';
   return status && /^5\d\d$/.test(status) ? 'REGISTRY_UNAVAILABLE' : null;
@@ -98,6 +101,7 @@ function managerCode(
     if (transport) return transport;
   }
   if (manager === 'npm') {
+    if (code === 'E429') return 'REGISTRY_RATE_LIMITED';
     if (typeof code === 'string' && /^E5\d\d$/.test(code))
       return 'REGISTRY_UNAVAILABLE';
     if (code === 'ENEEDAUTH') return 'REGISTRY_CREDENTIALS_MISSING';
@@ -106,6 +110,7 @@ function managerCode(
     if (code === 'E403') return 'REGISTRY_ACCESS_DENIED';
   }
   if (manager === 'pnpm') {
+    if (code === 'ERR_PNPM_FETCH_429') return 'REGISTRY_RATE_LIMITED';
     if (typeof code === 'string' && /^ERR_PNPM_FETCH_5\d\d$/.test(code))
       return 'REGISTRY_UNAVAILABLE';
     if (code === 'ERR_PNPM_FETCH_401') return 'REGISTRY_AUTHENTICATION_FAILED';
@@ -129,13 +134,13 @@ function yarnError(message: string): RegistryDiagnosticCode | null {
   )
     return 'REGISTRY_CREDENTIALS_MISSING';
   const status =
-    /\bRequest (?:failed(?: with status code)?|[^\r\n]+? failed with status code)[ :]+["']?(401|403|5\d\d)\b/i.exec(
+    /\bRequest (?:failed(?: with status code)?|[^\r\n]+? failed with status code)[ :]+["']?(401|403|429|5\d\d)\b/i.exec(
       message,
     )?.[1];
   return responseCode(status) ?? transportError(message);
 }
 function yarnNetworkError(message: string): RegistryDiagnosticCode | null {
-  const status = /^\s*Response Code:\s*(401|403|5\d\d)(?:\s|$)/.exec(
+  const status = /^\s*Response Code:\s*(401|403|429|5\d\d)(?:\s|$)/.exec(
     message,
   )?.[1];
   return responseCode(status) ?? transportError(message);
@@ -188,12 +193,63 @@ function lineCode(
     ) ?? yarnError(line)
   );
 }
+function retryResetAt(value: unknown, observedAt: number): string | undefined {
+  if (!object(value)) return undefined;
+  const error = object(value.error) ? value.error : value;
+  if (!object(error.headers)) return undefined;
+  const entries = Object.entries(error.headers).filter(
+    ([name]) => name.toLowerCase() === 'retry-after',
+  );
+  if (entries.length !== 1 || typeof entries[0][1] !== 'string')
+    return undefined;
+  const raw = entries[0][1];
+  if (raw.length > 128 || /[\r\n]/.test(raw)) return undefined;
+  const header = raw.trim();
+  let timestamp: number;
+  if (/^\d+$/.test(header)) {
+    const seconds = Number(header);
+    if (!Number.isSafeInteger(seconds)) return undefined;
+    timestamp = observedAt + seconds * 1000;
+  } else {
+    timestamp = Date.parse(header);
+    if (
+      !Number.isFinite(timestamp) ||
+      new Date(timestamp).toUTCString() !== header
+    )
+      return undefined;
+  }
+  const date = new Date(timestamp);
+  if (
+    !Number.isSafeInteger(timestamp) ||
+    !Number.isFinite(date.getTime()) ||
+    timestamp < observedAt ||
+    date.getUTCFullYear() > 9999
+  )
+    return undefined;
+  return date.toISOString();
+}
+function diagnostic(
+  code: RegistryDiagnosticCode,
+  value?: unknown,
+  observedAt = Date.now(),
+): { code: RegistryDiagnosticCode; error: string; resetAt?: string } {
+  const resetAt =
+    code === 'REGISTRY_RATE_LIMITED'
+      ? retryResetAt(value, observedAt)
+      : undefined;
+  return {
+    code,
+    error: messages[code],
+    ...(resetAt === undefined ? {} : { resetAt }),
+  };
+}
 export function registryDiagnostic(
   manager: Manager,
   stdout: string,
   stderr: string,
   failed: boolean,
-): { code: RegistryDiagnosticCode; error: string } | null {
+): { code: RegistryDiagnosticCode; error: string; resetAt?: string } | null {
+  const observedAt = Date.now();
   for (const output of [stdout, stderr]) {
     const plain = stripVTControlCharacters(output);
     let document: unknown;
@@ -203,7 +259,7 @@ export function registryDiagnostic(
       /* JSON lines or command text. */
     }
     let code = recordCode(manager, document);
-    if (code) return { code, error: messages[code] };
+    if (code) return diagnostic(code, document, observedAt);
     for (const line of plain.split(/\r?\n/)) {
       let event: unknown;
       try {
@@ -213,7 +269,7 @@ export function registryDiagnostic(
       }
       code =
         recordCode(manager, event) ?? (failed ? lineCode(manager, line) : null);
-      if (code) return { code, error: messages[code] };
+      if (code) return diagnostic(code, event, observedAt);
     }
   }
   return null;
