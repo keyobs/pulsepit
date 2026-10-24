@@ -277,7 +277,7 @@ test('successful reports and incidental auth strings are not reclassified; unrel
           data: 'Response Code: 500 (Server Error)',
         }),
       },
-      'COMMAND_FAILED',
+      'REGISTRY_UNAVAILABLE',
     ],
   ] as const) {
     const response = await diagnose(manager, value);

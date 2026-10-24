@@ -4,6 +4,11 @@ export const RegistryDiagnosticCode = z.enum([
   'REGISTRY_CREDENTIALS_MISSING',
   'REGISTRY_AUTHENTICATION_FAILED',
   'REGISTRY_ACCESS_DENIED',
+  'REGISTRY_DNS_FAILED',
+  'REGISTRY_CONNECTION_FAILED',
+  'REGISTRY_TLS_FAILED',
+  'REGISTRY_REQUEST_TIMEOUT',
+  'REGISTRY_UNAVAILABLE',
 ]);
 export type RegistryDiagnosticCode = z.infer<typeof RegistryDiagnosticCode>;
 

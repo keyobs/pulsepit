@@ -117,7 +117,12 @@ test('warnings never hide fatal errors, arbitrary text, truncated or multiple re
   ]) {
     const response = await diagnose(output);
     assert.equal(response.statusCode, 502);
-    assert.equal(ErrorResponse.parse(response.json()).code, 'INVALID_OUTPUT');
+    assert.equal(
+      ErrorResponse.parse(response.json()).code,
+      output.includes('ERR_PNPM_FETCH_500')
+        ? 'REGISTRY_UNAVAILABLE'
+        : 'INVALID_OUTPUT',
+    );
     assert.equal(response.body.includes('private-'), false);
     assert.equal(OutdatedResponse.safeParse(response.json()).success, false);
   }
