@@ -135,7 +135,6 @@ test('all package managers expose registry rate limiting without inventing a ret
 });
 
 test('Retry-After on the same structured error becomes a canonical deadline through npm, pnpm and both Yarn paths', async (t) => {
-  const { diagnose } = await fixture(t);
   const observedAt = Date.parse('2026-10-24T12:00:00.000Z');
   t.mock.method(Date, 'now', () => observedAt);
   const date = new Date(observedAt + 120_000).toUTCString();
@@ -179,15 +178,19 @@ test('Retry-After on the same structured error becomes a canonical deadline thro
       observedAt + 120_000,
     ],
   ] as const) {
-    const response = await diagnose(manager, { stdout: packet(error) });
-    assert.equal(response.statusCode, 502);
-    assert.equal(response.json().code, 'REGISTRY_RATE_LIMITED');
-    assert.equal(
-      ErrorResponse.parse(response.json()).resetAt,
-      new Date(expected).toISOString(),
-    );
-    assertPrivate(response.body);
-    assert.equal(response.body.includes('retry-after'), false);
+    // Each manager must run independently of another manager's active deadline.
+    await t.test(manager, async (t) => {
+      const { diagnose } = await fixture(t);
+      const response = await diagnose(manager, { stdout: packet(error) });
+      assert.equal(response.statusCode, 502);
+      assert.equal(response.json().code, 'REGISTRY_RATE_LIMITED');
+      assert.equal(
+        ErrorResponse.parse(response.json()).resetAt,
+        new Date(expected).toISOString(),
+      );
+      assertPrivate(response.body);
+      assert.equal(response.body.includes('retry-after'), false);
+    });
   }
 });
 

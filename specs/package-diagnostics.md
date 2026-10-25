@@ -83,7 +83,31 @@ pour tenter de récupérer cette information.
 
 Le frontend peut afficher l'heure de reprise si elle est connue et une invitation
 à patienter sinon. Il ne doit pas interpréter cette heure comme la garantie
-qu'une requête suivante réussira. Aucune nouvelle temporisation, conservation de
-quota, attente ou relance automatique n'est ajoutée à cette étape. Les politiques
-de retry internes des gestionnaires et la limite globale de trente secondes
-restent inchangées.
+qu'une requête suivante réussira. Les politiques de retry internes des gestionnaires
+et la limite globale de trente secondes restent inchangées.
+
+## Protection des relances manuelles
+
+Après un `REGISTRY_RATE_LIMITED` avec un `resetAt` fiable encore futur, l'API
+conserve en mémoire l'erreur assainie pour ce chemin de dépôt normalisé. Une
+nouvelle requête retourne immédiatement la même erreur HTTP **502**, avec le même
+`resetAt`, sans exécuter le gestionnaire ni repousser l'échéance. La validation du
+dépôt reste préalable : un dépôt supprimé ou hors configuration reçoit HTTP 404.
+Changer le gestionnaire ou sa configuration ne supprime pas cette attente.
+
+Dès que l'heure atteint l'échéance, un nouvel appel manuel peut exécuter le
+diagnostic. Aucun lancement automatique, minuterie, délai par défaut ou appel
+supplémentaire n'est ajouté. Sans échéance future fiable, les appels suivants
+restent permis. Les autres erreurs et les succès ne sont pas conservés.
+
+Les appels simultanés pour un même dépôt partagent l'exécution active et son
+résultat, y compris lorsqu'aucune échéance n'est connue. Les autres dépôts restent
+indépendants : aucun quota commun à un registre n'est supposé. Cet état est propre
+à l'instance API, sans persistance ; un redémarrage le perd. Les entrées expirées
+sont nettoyées lors des appels suivants. La normalisation des chemins est celle
+des routes existantes ; les alias symboliques ne sont pas regroupés.
+
+Le frontend peut rendre la relance indisponible jusqu'à `resetAt`, puis proposer
+un nouvel essai manuel. Le backend applique cette règle même si le client soumet
+une requête avant l'échéance. La requête, les schémas partagés et le succès restent
+inchangés.

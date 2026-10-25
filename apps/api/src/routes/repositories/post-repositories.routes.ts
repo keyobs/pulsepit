@@ -25,7 +25,7 @@ import {
   type GitPushResult,
   pushRepositoryBranch,
 } from '../../services/git/git-push.service.js';
-import { getOutdatedDependencies } from '../../services/packages/outdated.service.js';
+import { createDependencyDiagnostics } from '../../services/packages/dependency-diagnostics.service.js';
 import { findConfiguredRepository } from '../../services/repositories/repositories.service.js';
 import type { RepositoryUrls } from '../../services/repositories/repository-config.service.js';
 
@@ -36,6 +36,7 @@ export const postRepositoriesRoutes: FastifyPluginAsync<
     checks: GitChecksService;
   }
 > = async (app, options) => {
+  const diagnoseDependencies = createDependencyDiagnostics();
   app.post<{ Body: MonitoringRequest }>(
     '/monitoring',
     {
@@ -242,7 +243,7 @@ export const postRepositoriesRoutes: FastifyPluginAsync<
         });
       }
 
-      const result = await getOutdatedDependencies(repository.path);
+      const result = await diagnoseDependencies(repository.path);
       if (result.error !== null) {
         const status =
           result.code === 'PACKAGE_MANAGER'
