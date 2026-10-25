@@ -69,6 +69,8 @@ La notification envoyée par une CI constitue une autre architecture : elle néc
 
 Pour la première tranche, la consultation est déclenchée par une action de l'utilisateur. Pas de polling, d'historique persistant ou de remontée automatique au démarrage du dashboard.
 
+**Mise à jour du 2026-10-25 :** l'exclusion du polling est levée pour la surveillance périodique décrite au § 27. La balise reste passive ; seul le backend local interroge.
+
 ### Sites statiques et applications avec serveur
 
 Deux modes de lecture sont à prévoir pour couvrir les hébergements utilisés :
@@ -471,3 +473,20 @@ Le lecteur Pulsepit valide le protocole et le format, borne la réponse à 64 Ki
 Point distinct du beacon, corrigé le 2026-10-22 : les commandes Git et diagnostics de dépendances de l'API reçoivent maintenant un environnement construit à partir de listes explicites, au lieu d'hériter automatiquement de `process.env`. Les tokens API GitHub/Vercel et les variables inconnues restent dans le processus Pulsepit. Git conserve l'environnement opérationnel et l'agent SSH ; les variables dédiées d'authentification de registre restent réservées aux diagnostics npm/pnpm/Yarn Modern. Les hooks s'exécutent toujours lors des opérations Git qui les déclenchent. Une telle réduction d'environnement n'isole pas un hook malveillant des fichiers et droits accessibles au même compte utilisateur ; ne pas présenter cette mesure comme une sandbox.
 
 Un service local prépare l'inventaire des hooks effectifs en lecture seule, y compris les wrappers Husky et les worktrees, sans interpréter leur politique de branches. Le raccordement HTTP est une étape distincte soumise au contrat front/back. Seuls les neuf nouveaux tests environnement/découverte sont exécutés ; ils passent, avec TypeScript API et Biome ciblé. Vérification réelle sur betbasile : trois hooks Husky découverts sans exécution, accès GitHub en lecture conservé avec l'environnement filtré. Aucun push réel ni suite existante exécutés.
+
+## 27. Surveillance périodique des balises (v1)
+
+Décision utilisatrice du 2026-10-25 : voir dans Pulsepit qu'un site est down, lorsque Pulsepit tourne sur sa machine. Aucune notification externe pour le moment.
+
+Principe : la balise reste passive. Elle n'envoie rien, ne lance aucune tâche et le package est inchangé en mode statique. Le backend local relit la source `metadata` déjà configurée, à intervalle régulier. Envoyer depuis l'application suivie exigerait une tâche active dans celle-ci et un récepteur exposé sur Internet ; c'est exclu pour des raisons de sécurité.
+
+Périmètre v1 :
+
+* Lecture de la balise uniquement ; pas de ping de l'URL de l'application.
+* Activation/désactivation et intervalle paramétrables par environnement, dans la configuration serveur.
+* État courant uniquement (en ligne, down depuis, dernière vérification, cause), en mémoire ; pas d'historique.
+* Mêmes limites que le lecteur actuel (§ 20).
+
+Une balise statique ne déclare aucune santé métier : « up » signifie que le bon artefact est servi et lisible, pas que l'application fonctionne entièrement.
+
+Contrat front/back : demande D7, § 57 de `CONVENTION.md`, à valider par le back. L'affichage sur les cartes Déploiement sera traité après livraison du back.
