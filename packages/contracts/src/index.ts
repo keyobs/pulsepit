@@ -1,3 +1,8 @@
+export {
+  BeaconMonitoringEnvironment,
+  BeaconMonitoringInterval,
+  BeaconMonitoringResponse,
+} from './beacon-monitoring.js';
 export { BranchesResponse, LocalBranch } from './branches.js';
 export {
   CheckExecution,

@@ -1,7 +1,10 @@
 import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { isAbsolute, join, resolve } from 'node:path';
-import { DeploymentEnvironmentConfig } from '@pulsepit/contracts';
+import {
+  BeaconMonitoringInterval,
+  DeploymentEnvironmentConfig,
+} from '@pulsepit/contracts';
 
 import {
   parseRepositoryGitPolicies,
@@ -12,6 +15,7 @@ export type RepositoryUrls = Record<string, Record<string, string>>;
 export interface StaticMetadataSource {
   type: 'static';
   url: string;
+  monitoring?: { enabled: boolean; interval: BeaconMonitoringInterval };
 }
 export interface GithubPagesDateSource {
   type: 'github-pages';
@@ -236,15 +240,37 @@ function validateMetadataSource(
     !isObject(value) ||
     value.type !== 'static' ||
     typeof value.url !== 'string' ||
-    Object.keys(value).some((key) => key !== 'type' && key !== 'url')
+    Object.keys(value).some(
+      (key) => !['type', 'url', 'monitoring'].includes(key),
+    )
   ) {
     throw new InvalidRepositorySettings(
       `Invalid metadata source for ${environment} in ${path}.`,
     );
   }
+  let monitoring: StaticMetadataSource['monitoring'];
+  if (value.monitoring !== undefined) {
+    const settings = value.monitoring;
+    const interval = BeaconMonitoringInterval.safeParse(
+      isObject(settings) ? settings.interval : undefined,
+    );
+    if (
+      !isObject(settings) ||
+      typeof settings.enabled !== 'boolean' ||
+      !interval.success ||
+      Object.keys(settings).some(
+        (key) => !['enabled', 'interval'].includes(key),
+      )
+    )
+      throw new InvalidRepositorySettings(
+        `Invalid metadata monitoring for ${environment} in ${path}.`,
+      );
+    monitoring = { enabled: settings.enabled, interval: interval.data };
+  }
   return {
     type: 'static',
     url: validateUrl(value.url, `metadata.${environment}`, path).href,
+    ...(monitoring === undefined ? {} : { monitoring }),
   };
 }
 

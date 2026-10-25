@@ -4,6 +4,7 @@ import {
   type DeploymentMetadataError,
 } from '@pulsepit/contracts';
 import type { StaticMetadataSource } from '../repositories/repository-config.service.js';
+import { acquireMetadataReadSlot } from './metadata-read-slots.service.js';
 
 const maxBytes = 64 * 1024;
 const observationSchema = DeploymentEnvironment.omit({ comparison: true });
@@ -127,6 +128,7 @@ async function collectEnvironment(
   environment: DeploymentEnvironmentConfig,
   source: StaticMetadataSource | undefined,
   timeoutMs: number,
+  shutdownSignal?: AbortSignal,
 ): Promise<DeploymentObservation> {
   const base: DeploymentObservation = {
     ...environment,
@@ -138,8 +140,13 @@ async function collectEnvironment(
     metadataError: null,
   };
   if (source === undefined) return base;
-  const signal = AbortSignal.timeout(timeoutMs);
+  const release = await acquireMetadataReadSlot(shutdownSignal);
+  const timeout = AbortSignal.timeout(timeoutMs);
+  const signal = shutdownSignal
+    ? AbortSignal.any([timeout, shutdownSignal])
+    : timeout;
   try {
+    signal.throwIfAborted();
     const response = await fetch(source.url, {
       method: 'GET',
       redirect: 'error',
@@ -175,6 +182,8 @@ async function collectEnvironment(
       metadataCheckedAt: new Date().toISOString(),
       metadataError,
     };
+  } finally {
+    release();
   }
 }
 
@@ -182,6 +191,7 @@ export async function collectDeploymentMetadata(
   environments: DeploymentEnvironmentConfig[],
   sources: Record<string, StaticMetadataSource>,
   timeoutMs = 5_000,
+  shutdownSignal?: AbortSignal,
 ): Promise<DeploymentObservation[]> {
   const results: DeploymentObservation[] = new Array(environments.length);
   let next = 0;
@@ -197,6 +207,7 @@ export async function collectDeploymentMetadata(
           environment,
           source,
           timeoutMs,
+          shutdownSignal,
         );
       }
     }),
