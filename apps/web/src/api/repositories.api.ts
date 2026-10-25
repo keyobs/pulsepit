@@ -1,5 +1,6 @@
 import { LIST_REQUEST_TIMEOUT_MS } from '@constants/api';
 import {
+  BeaconMonitoringResponse,
   BranchesResponse,
   ChecksOperation,
   DeploymentsResponse,
@@ -95,3 +96,6 @@ export const cancelChecks = (path: string, id: string) =>
     query: { path },
     schema: ChecksOperation,
   });
+
+export const getBeaconMonitoring = () =>
+  apiRequest('/monitoring', { schema: BeaconMonitoringResponse });

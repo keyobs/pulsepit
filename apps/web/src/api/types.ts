@@ -1,5 +1,8 @@
 // Les features importent les types du contrat d'ici, jamais directement du package.
 export type {
+  BeaconMonitoringEnvironment,
+  BeaconMonitoringInterval,
+  BeaconMonitoringResponse,
   BranchesResponse,
   CheckExecution,
   ChecksOperation,

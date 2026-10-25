@@ -1,6 +1,7 @@
 import type { Repository } from '@api/types';
 import { Button } from '@components/button/Button';
 import { EmptyState } from '@components/emptyState/EmptyState';
+import { useBeaconMonitoring } from '@hooks/useBeaconMonitoring';
 import { useDeployments } from '@hooks/useDeployments';
 import { describeApiError } from '@utils/describeApiError';
 import { environmentsOf } from '@utils/repositoryStatus';
@@ -17,6 +18,7 @@ export const DeploymentTab = ({ repository }: DeploymentTabProps) => {
   const environments = environmentsOf(repository);
   const metadata = useDeployments(repository.path);
   const { run } = metadata;
+  const monitoring = useBeaconMonitoring(repository.path);
 
   useEffect(() => {
     void run();
@@ -55,6 +57,9 @@ export const DeploymentTab = ({ repository }: DeploymentTabProps) => {
                     (item) => item.environment === config.environment,
                   ) ?? null
                 }
+                monitoring={monitoring.find(
+                  (item) => item.environment === config.environment,
+                )}
               />
             ))}
           </div>

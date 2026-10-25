@@ -2,6 +2,7 @@ import { jsonResponse, makeRepository } from '@test/fixtures';
 import {
   checkDeployments,
   fetchRepository,
+  getBeaconMonitoring,
   getBranches,
   getDeployments,
   getOrigin,
@@ -227,5 +228,27 @@ describe('repositories api', () => {
       `/api/repositories/origin?path=${encodeURIComponent(PATH)}`,
     );
     expect(result.origin).toBeNull();
+  });
+
+  it('reads beacon monitoring states', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({
+        environments: [
+          {
+            path: PATH,
+            environment: 'production',
+            enabled: true,
+            interval: '5m',
+            status: 'pending',
+            since: '2026-10-25T10:00:00.000Z',
+            lastCheckedAt: null,
+            error: null,
+          },
+        ],
+      }),
+    );
+    const result = await getBeaconMonitoring();
+    expect(lastCall().url).toBe('/api/monitoring');
+    expect(result.environments[0].status).toBe('pending');
   });
 });

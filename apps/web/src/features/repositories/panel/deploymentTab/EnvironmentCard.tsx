@@ -1,4 +1,5 @@
 import type {
+  BeaconMonitoringEnvironment,
   DeploymentEnvironment,
   DeploymentEnvironmentConfig,
   Repository,
@@ -16,12 +17,14 @@ import { describeComparison } from '@utils/describeComparison';
 import { formatDateTime } from '@utils/formatDate';
 import { BeaconIndicator } from '../../beacon/BeaconIndicator';
 import { useRepositoryRuntime } from '../../hooks/useRepositoryRuntime';
+import { BeaconMonitoringStatus } from './BeaconMonitoringStatus';
 import './environmentCard.less';
 
 interface EnvironmentCardProps {
   repository: Repository;
   config: DeploymentEnvironmentConfig;
   metadata: DeploymentEnvironment | null;
+  monitoring?: BeaconMonitoringEnvironment;
 }
 
 const SOURCE_LABELS = {
@@ -34,6 +37,7 @@ export const EnvironmentCard = ({
   repository,
   config,
   metadata,
+  monitoring,
 }: EnvironmentCardProps) => {
   const { deployments } = useRepositoryRuntime(repository.path);
   const feedback = useLinkFeedback();
@@ -180,6 +184,11 @@ export const EnvironmentCard = ({
           {DEPLOYMENT_METADATA_ERROR_MESSAGES[metadata.metadataError.code] ??
             metadata.metadataError.message}
         </span>
+      )}
+      {monitoring && monitoring.status !== 'disabled' && (
+        <LabeledCell label="Surveillance de la balise">
+          <BeaconMonitoringStatus monitoring={monitoring} />
+        </LabeledCell>
       )}
       {check && (
         <LabeledCell label="Dernière vérification">
