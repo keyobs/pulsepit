@@ -15,6 +15,17 @@ export function formatDateTime(iso: string): string {
   });
 }
 
+/** Heure seule (14:32:05), dans la langue et le fuseau du navigateur. */
+export function formatTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleTimeString(undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+}
+
 /** Durée écoulée depuis `iso` (« il y a 3 jours »), dans la langue du navigateur. */
 export function formatRelativeTime(
   iso: string,

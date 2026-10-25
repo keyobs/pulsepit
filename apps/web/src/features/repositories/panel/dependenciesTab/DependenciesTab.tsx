@@ -4,7 +4,9 @@ import { Chip } from '@components/chip/Chip';
 import { EmptyState } from '@components/emptyState/EmptyState';
 import { useBeaconVersion } from '@hooks/useBeaconVersion';
 import { useDisclosure } from '@hooks/useDisclosure';
+import { useRetryDeadline } from '@hooks/useRetryDeadline';
 import { describeApiError } from '@utils/describeApiError';
+import { formatTime } from '@utils/formatDate';
 import { TbStethoscope } from 'react-icons/tb';
 import { useRepositoryRuntime } from '../../hooks/useRepositoryRuntime';
 import { OutdatedTable } from './OutdatedTable';
@@ -20,6 +22,7 @@ export const DependenciesTab = ({ repository }: DependenciesTabProps) => {
   const manifest = useDisclosure();
   const { status, data, error } = outdated.state;
   const beacon = useBeaconVersion(repository.path, repository.beacon.package);
+  const retryAt = useRetryDeadline(error);
 
   return (
     <div className="pp-dependencies-tab">
@@ -29,6 +32,7 @@ export const DependenciesTab = ({ repository }: DependenciesTabProps) => {
           size="small"
           icon={<TbStethoscope />}
           loading={status === 'loading'}
+          disabled={retryAt !== null}
           onClick={() => void outdated.run()}
         >
           Lancer le diagnostic
@@ -56,6 +60,7 @@ export const DependenciesTab = ({ repository }: DependenciesTabProps) => {
       {status === 'error' && (
         <EmptyState>
           <Chip variant="bad">Échec</Chip> {describeApiError(error)}
+          {retryAt && ` Nouvel essai possible à ${formatTime(retryAt)}.`}
         </EmptyState>
       )}
       {data === null && status !== 'error' && (
