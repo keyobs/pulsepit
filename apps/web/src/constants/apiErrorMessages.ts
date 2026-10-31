@@ -14,6 +14,7 @@ export const API_ERROR_MESSAGES: Record<string, string> = {
   AUTHENTICATION_FAILED: 'Authentification refusée par le remote.',
   DIRECT_PUSH_FORBIDDEN: 'Push direct interdit sur cette branche.',
   INVALID_PUSH_POLICY: 'Politique de push invalide : push bloqué.',
+  PUSH_LOCKED: 'Push verrouillé dans les réglages Pulsepit.',
   CHECK_RUNNER_UNAVAILABLE:
     'Des contrôles sont requis mais le serveur ne peut pas les exécuter.',
   GIT_STATE_UNAVAILABLE: "L'état Git est illisible : push impossible.",

@@ -9,7 +9,7 @@ export interface Parser<T> {
 
 interface RequestOptions<T> {
   schema: Parser<T>;
-  method?: 'GET' | 'POST';
+  method?: 'GET' | 'POST' | 'PUT';
   query?: Record<string, string | number | undefined>;
   body?: unknown;
   signal?: AbortSignal;

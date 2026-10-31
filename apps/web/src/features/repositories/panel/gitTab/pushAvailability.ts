@@ -9,6 +9,7 @@ const REASON_LABELS: Record<string, string> = {
   GIT_STATE_UNAVAILABLE: 'État Git illisible',
   POLICY_UNCONFIGURED: 'Politique de push non configurée',
   POLICY_INCOMPLETE: 'Politique de push partiellement inconnue',
+  PUSH_LOCKED: 'Push verrouillé dans les réglages',
 };
 
 export interface PushAvailability {

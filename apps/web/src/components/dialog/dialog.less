@@ -1,0 +1,66 @@
+@import "@styles/breakpoints.less";
+
+.pp-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 48px 16px;
+  overflow-y: auto;
+
+  .pp-dialog-overlay {
+    position: fixed;
+    inset: 0;
+    border: 0;
+    background: rgb(0 0 0 / 40%);
+    cursor: default;
+  }
+
+  .pp-dialog {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: min(100%, 640px);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-m);
+    background: var(--surface);
+    box-shadow: 0 16px 48px rgb(0 0 0 / 25%);
+  }
+
+  .pp-dialog-header,
+  .pp-dialog-footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 18px;
+  }
+
+  .pp-dialog-header {
+    justify-content: space-between;
+    border-bottom: 1px solid var(--line);
+
+    h2 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: 17px;
+    }
+  }
+
+  .pp-dialog-body {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    padding: 18px;
+  }
+
+  .pp-dialog-footer {
+    justify-content: flex-end;
+    border-top: 1px solid var(--line);
+  }
+
+  @media (max-width: @small) {
+    padding: 16px;
+  }
+}
