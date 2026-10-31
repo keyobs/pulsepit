@@ -14,14 +14,11 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     throw new Error('CONFIG_PATH must contain a non-empty file path.');
   }
   const rawPaths = env.SCAN_PATH;
-  if (!rawPaths?.trim()) {
-    throw new Error(
-      'Configure SCAN_PATH with a directory path or a JSON array of directory paths.',
-    );
-  }
-
   let paths: unknown = rawPaths;
-  if (rawPaths.trimStart().startsWith('[')) {
+  // Without SCAN_PATH, scan folders come from the settings file.
+  if (!rawPaths?.trim()) {
+    paths = [];
+  } else if (rawPaths.trimStart().startsWith('[')) {
     try {
       paths = JSON.parse(rawPaths);
     } catch {
@@ -33,7 +30,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 
   const directories = Array.isArray(paths) ? paths : [paths];
   if (
-    directories.length === 0 ||
+    (directories.length === 0 && rawPaths?.trim()) ||
     !directories.every(
       (path): path is string =>
         typeof path === 'string' && path.trim().length > 0,

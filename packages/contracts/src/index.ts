@@ -64,6 +64,15 @@ export {
   ScanError,
 } from './repositories.js';
 export {
+  PushLocks,
+  RepositoryPushLock,
+  RescanFailure,
+  RescanInterval,
+  RescanState,
+  Settings,
+  SettingsResponse,
+} from './settings.js';
+export {
   DeploymentEvidence,
   GithubEnvironment,
   GithubWorkflowAnalysis,

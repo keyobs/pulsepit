@@ -4,6 +4,7 @@ import type {
   ListRepositoriesResponse,
   OriginResponse,
   PackageResponse,
+  PushLocks,
   Repository as RepositoryResponse,
   WorkflowsResponse,
 } from '@pulsepit/contracts';
@@ -35,6 +36,7 @@ import {
   type RepositoryEnvironments,
   type RepositoryUrls,
 } from '../../services/repositories/repository-config.service.js';
+import { isPushLocked } from '../../services/settings/settings.service.js';
 import { getRepositoryWorkflows } from '../../services/workflows/workflows.service.js';
 
 export const getRepositoriesRoutes: FastifyPluginAsync<
@@ -45,6 +47,7 @@ export const getRepositoriesRoutes: FastifyPluginAsync<
     repositoryConfigurationErrors: RepositoryConfigurationErrors;
     repositoryGitPolicies: RepositoryGitPolicies;
     checks: GitChecksService;
+    pushLocks?: () => PushLocks;
   }
 > = async (app, options) => {
   const withRepositoryConfiguration = async (
@@ -205,6 +208,7 @@ export const getRepositoriesRoutes: FastifyPluginAsync<
         repository.path,
         repositoryGitPolicy(repository.path, options.repositoryGitPolicies),
       );
+      const locks = options.pushLocks?.();
       return {
         path: repository.path,
         branches: await Promise.all(
@@ -214,15 +218,30 @@ export const getRepositoriesRoutes: FastifyPluginAsync<
               branch.name,
               policy,
             );
+            const assessed = assessBranchPush(
+              policy,
+              branch.name,
+              true,
+              checks.checksId !== null ? true : (checks.reason ?? false),
+            );
             return {
               ...branch,
               checksId: checks.checksId,
-              ...assessBranchPush(
-                policy,
-                branch.name,
-                true,
-                checks.checksId !== null ? true : (checks.reason ?? false),
-              ),
+              ...assessed,
+              ...(locks &&
+                isPushLocked(locks, repository.path, branch.name) && {
+                  pushAssessment: {
+                    state: 'blocked' as const,
+                    canAttempt: false as const,
+                    reasons: [
+                      {
+                        code: 'PUSH_LOCKED' as const,
+                        message:
+                          'Push to this branch is locked in Pulsepit settings.',
+                      },
+                    ],
+                  },
+                }),
             };
           }),
         ),

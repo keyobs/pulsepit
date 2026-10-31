@@ -1,4 +1,5 @@
 import { dirname, join } from 'node:path';
+import type { PushLocks } from '@pulsepit/contracts';
 import type { FastifyPluginAsync } from 'fastify';
 import type { AppConfig } from '../../config.js';
 import { GitChecksService } from '../../services/git/git-checks.service.js';
@@ -25,6 +26,7 @@ export const repositoriesRoutes: FastifyPluginAsync<
     repositoryEnvironments: RepositoryEnvironments;
     repositoryConfigurationErrors: RepositoryConfigurationErrors;
     repositoryGitPolicies: RepositoryGitPolicies;
+    pushLocks?: () => PushLocks;
   }
 > = async (app, options) => {
   const checks = new GitChecksService(options.repositoryGitPolicies, {
@@ -64,10 +66,12 @@ export const repositoriesRoutes: FastifyPluginAsync<
     repositoryEnvironments: options.repositoryEnvironments,
     repositoryConfigurationErrors: options.repositoryConfigurationErrors,
     repositoryGitPolicies: options.repositoryGitPolicies,
+    pushLocks: options.pushLocks,
   });
   app.register(postRepositoriesRoutes, {
     checks,
     repositoryGitPolicies: options.repositoryGitPolicies,
+    pushLocks: options.pushLocks,
     scanPaths: options.scanPaths,
     repositoryUrls: options.repositoryUrls,
   });

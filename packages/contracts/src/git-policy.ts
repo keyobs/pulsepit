@@ -14,6 +14,7 @@ export const PushPolicyCode = z.enum([
   'POLICY_UNCONFIGURED',
   'POLICY_INCOMPLETE',
   'GIT_STATE_UNAVAILABLE',
+  'PUSH_LOCKED',
 ]);
 export type PushPolicyCode = z.infer<typeof PushPolicyCode>;
 

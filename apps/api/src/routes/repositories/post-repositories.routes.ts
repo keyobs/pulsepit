@@ -6,6 +6,7 @@ import type {
   MonitoringResponse,
   OutdatedRequest,
   OutdatedResponse,
+  PushLocks,
   PushRequest,
   PushResponse,
 } from '@pulsepit/contracts';
@@ -28,12 +29,14 @@ import {
 import { createDependencyDiagnostics } from '../../services/packages/dependency-diagnostics.service.js';
 import { findConfiguredRepository } from '../../services/repositories/repositories.service.js';
 import type { RepositoryUrls } from '../../services/repositories/repository-config.service.js';
+import { isPushLocked } from '../../services/settings/settings.service.js';
 
 export const postRepositoriesRoutes: FastifyPluginAsync<
   Pick<AppConfig, 'scanPaths'> & {
     repositoryUrls: RepositoryUrls;
     repositoryGitPolicies: RepositoryGitPolicies;
     checks: GitChecksService;
+    pushLocks?: () => PushLocks;
   }
 > = async (app, options) => {
   const diagnoseDependencies = createDependencyDiagnostics();
@@ -102,6 +105,16 @@ export const postRepositoriesRoutes: FastifyPluginAsync<
       if (!repository) {
         return reply.code(404).send({
           error: 'Repository not found in configured scan directories.',
+        });
+      }
+      const locks = options.pushLocks?.();
+      if (locks && isPushLocked(locks, repository.path, branch)) {
+        return reply.code(403).send({
+          path: repository.path,
+          branch,
+          success: false,
+          code: 'PUSH_LOCKED',
+          error: 'Push to this branch is locked in Pulsepit settings.',
         });
       }
       let result: GitPushResult;
