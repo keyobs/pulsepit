@@ -1,4 +1,5 @@
 import { useRepositories } from '@hooks/useRepositories';
+import { useRescanWatcher } from '@hooks/useRescanWatcher';
 import { type ReactNode, useMemo } from 'react';
 import { useDeploymentActions } from '../hooks/useDeploymentActions';
 import { useExpandedRepositories } from '../hooks/useExpandedRepositories';
@@ -15,6 +16,7 @@ export const RepositoriesProvider = ({
   children,
 }: RepositoriesProviderProps) => {
   const list = useRepositories();
+  useRescanWatcher(list.reload);
   const fetching = useFetchActions(list.reload);
   const diagnostics = useOutdatedActions();
   const deployments = useDeploymentActions();
