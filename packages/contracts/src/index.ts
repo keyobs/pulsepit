@@ -39,6 +39,7 @@ export {
   GithubActionsRunsResponse,
 } from './github-actions.js';
 export { GitHook, GitHookFile, RepositoryHooksResponse } from './hooks.js';
+export { InstallRequest, InstallResponse } from './install.js';
 export {
   DeploymentCheck,
   MonitoringRequest,

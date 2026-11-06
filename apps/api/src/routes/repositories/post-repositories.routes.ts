@@ -2,6 +2,8 @@ import type {
   ErrorResponse,
   FetchRequest,
   FetchResponse,
+  InstallRequest,
+  InstallResponse,
   MonitoringRequest,
   MonitoringResponse,
   OutdatedRequest,
@@ -27,6 +29,7 @@ import {
   pushRepositoryBranch,
 } from '../../services/git/git-push.service.js';
 import { createDependencyDiagnostics } from '../../services/packages/dependency-diagnostics.service.js';
+import { createDependencyInstaller } from '../../services/packages/install.service.js';
 import { findConfiguredRepository } from '../../services/repositories/repositories.service.js';
 import type { RepositoryUrls } from '../../services/repositories/repository-config.service.js';
 import { isPushLocked } from '../../services/settings/settings.service.js';
@@ -40,6 +43,7 @@ export const postRepositoriesRoutes: FastifyPluginAsync<
   }
 > = async (app, options) => {
   const diagnoseDependencies = createDependencyDiagnostics();
+  const installDependencies = createDependencyInstaller();
   app.post<{ Body: MonitoringRequest }>(
     '/monitoring',
     {
@@ -267,6 +271,45 @@ export const postRepositoriesRoutes: FastifyPluginAsync<
         return reply.code(status).send({ path: repository.path, ...result });
       }
       return { path: repository.path, ...result } satisfies OutdatedResponse;
+    },
+  );
+
+  app.post<{ Body: InstallRequest }>(
+    '/install',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['path'],
+          properties: {
+            path: { type: 'string', minLength: 1, pattern: '\\S' },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const repository = await findConfiguredRepository(
+        request.body.path,
+        options.scanPaths,
+      );
+      if (!repository) {
+        return reply.code(404).send({
+          error: 'Repository not found in configured scan directories.',
+        });
+      }
+      const result = await installDependencies(repository.path);
+      if (!('success' in result)) {
+        const status =
+          result.code === 'PACKAGE_MANAGER'
+            ? 422
+            : result.code === 'INSTALL_RUNNING'
+              ? 409
+              : result.code === 'TIMEOUT'
+                ? 504
+                : 502;
+        return reply.code(status).send({ path: repository.path, ...result });
+      }
+      return { path: repository.path, ...result } satisfies InstallResponse;
     },
   );
 };
