@@ -7,7 +7,7 @@ import { useDisclosure } from '@hooks/useDisclosure';
 import { useRetryDeadline } from '@hooks/useRetryDeadline';
 import { describeApiError } from '@utils/describeApiError';
 import { formatTime } from '@utils/formatDate';
-import { TbStethoscope } from 'react-icons/tb';
+import { TbPackageImport, TbStethoscope } from 'react-icons/tb';
 import { useRepositoryRuntime } from '../../hooks/useRepositoryRuntime';
 import { OutdatedTable } from './OutdatedTable';
 import { PackageJsonViewer } from './PackageJsonViewer';
@@ -18,7 +18,7 @@ interface DependenciesTabProps {
 }
 
 export const DependenciesTab = ({ repository }: DependenciesTabProps) => {
-  const { outdated } = useRepositoryRuntime(repository.path);
+  const { outdated, install } = useRepositoryRuntime(repository.path);
   const manifest = useDisclosure();
   const { status, data, error } = outdated.state;
   const beacon = useBeaconVersion(repository.path, repository.beacon.package);
@@ -36,6 +36,20 @@ export const DependenciesTab = ({ repository }: DependenciesTabProps) => {
           onClick={() => void outdated.run()}
         >
           Lancer le diagnostic
+        </Button>
+        <Button
+          size="small"
+          icon={<TbPackageImport />}
+          loading={install.state.status === 'loading'}
+          disabled={!repository.packageManager.name}
+          title={
+            repository.packageManager.name
+              ? `${repository.packageManager.name} install dans le dépôt local`
+              : 'Gestionnaire non détecté'
+          }
+          onClick={() => void install.run()}
+        >
+          Installer les dépendances
         </Button>
         <Button
           size="small"

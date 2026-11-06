@@ -14,6 +14,7 @@ export type {
   ErrorResponse,
   FetchResponse,
   GitStatus,
+  InstallResponse,
   ListRepositoriesResponse,
   LocalBranch,
   MonitoringResponse,

@@ -9,6 +9,7 @@ import {
   getOutdated,
   getPackage,
   getWorkflows,
+  installDependencies,
   listRepositories,
   pushBranch,
 } from './repositories.api';
@@ -135,6 +136,23 @@ describe('repositories api', () => {
     const result = await getOutdated(PATH);
     expect(lastCall().url).toBe('/api/repositories/outdated');
     expect(result.dependencies).toEqual([]);
+  });
+
+  it('installs dependencies', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({
+        path: PATH,
+        packageManager: 'pnpm',
+        command: 'pnpm install',
+        durationMs: 1200,
+        success: true,
+      }),
+    );
+    const result = await installDependencies(PATH);
+    expect(lastCall().url).toBe('/api/repositories/install');
+    expect(lastCall().init.method).toBe('POST');
+    expect(JSON.parse(lastCall().init.body as string)).toEqual({ path: PATH });
+    expect(result.command).toBe('pnpm install');
   });
 
   it('reads a package manifest, from HEAD by default', async () => {
