@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { promisify } from 'node:util';
 import type { RegistryDiagnosticCode } from '@pulsepit/contracts';
 import { createCommandEnvironment } from '../processes/command-environment.service.js';
-import type { OutdatedDependency, OutdatedResult } from './outdated.service.js';
+import type { OutdatedDependency, OutdatedReport } from './outdated.service.js';
 import { registryDiagnostic } from './registry-diagnostic.service.js';
 
 const execute = promisify(execFile);
@@ -45,7 +45,7 @@ function classicReport(
   stdout: string,
   stderr: string,
   code: number,
-): OutdatedResult {
+): OutdatedReport {
   const failure = () =>
     new DiagnosticError(
       'COMMAND_FAILED',
@@ -135,7 +135,9 @@ function classicReport(
 
 export async function getYarnOutdatedDependencies(
   repositoryPath: string,
-): Promise<OutdatedResult> {
+  packageNames: string[] = [],
+  isPrivate: (name: string) => boolean = () => false,
+): Promise<OutdatedReport> {
   const deadline = Date.now() + 30_000;
   async function run(
     args: string[],
@@ -214,7 +216,13 @@ export async function getYarnOutdatedDependencies(
     if (!match) throw new Error('Invalid Yarn version.');
     if (Number(match[1]) === 1) {
       const result = await run(
-        ['outdated', '--json', '--ignore-scripts', '--non-interactive'],
+        [
+          'outdated',
+          '--json',
+          '--ignore-scripts',
+          '--non-interactive',
+          ...packageNames,
+        ],
         true,
       );
       return classicReport(
@@ -287,6 +295,7 @@ export async function getYarnOutdatedDependencies(
         // have no published version to compare against.
         if (!descriptor) continue;
         const [, name, range] = descriptor;
+        if (isPrivate(name)) continue;
         const alias = /^((?:@[^/]+\/)?[^@]+)@(.+)$/.exec(range);
         const registryName = alias?.[1] ?? name;
         const query = alias ? range : `${name}@${range}`;

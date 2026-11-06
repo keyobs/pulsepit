@@ -88,6 +88,10 @@ test('repository list satisfies the shared contract with Git, package and deploy
     engines: { node: '>=22' },
     enginesError: null,
     packageManager: { name: 'pnpm', source: 'packageManager', error: null },
+    toolchain: {
+      node: { version: '>=22', source: 'engines' },
+      packageManager: { version: '12.14.0', source: 'packageManager' },
+    },
     origin: {
       name: 'origin',
       url: 'git@github.com:zeebha/project.git',

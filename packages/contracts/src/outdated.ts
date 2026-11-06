@@ -28,10 +28,24 @@ export const OutdatedDependency = z.object({
 
 export type OutdatedDependency = z.infer<typeof OutdatedDependency>;
 
+// Root manifest packages; private ones are never sent to a registry.
+export const PackageDependency = z.object({
+  name: z.string(),
+  section: z.enum(['dependencies', 'devDependencies', 'optionalDependencies']),
+  declared: z.string(),
+  installed: z.string().nullable(),
+  wanted: z.string().nullable(),
+  latest: z.string().nullable(),
+  status: z.enum(['outdated', 'current', 'private']),
+});
+
+export type PackageDependency = z.infer<typeof PackageDependency>;
+
 export const OutdatedResponse = z.object({
   path: z.string(),
   packageManager: z.enum(['npm', 'pnpm', 'yarn']),
   dependencies: z.array(OutdatedDependency),
+  packages: z.array(PackageDependency),
   error: z.null(),
 });
 

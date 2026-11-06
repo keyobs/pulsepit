@@ -78,6 +78,7 @@ test('pnpm reports remain valid when legacy warnings surround the JSON, includin
     assert.deepEqual(OutdatedResponse.parse(response.json()), {
       path,
       packageManager: 'pnpm',
+      packages: [],
       dependencies: [
         {
           name: '@scope/library',

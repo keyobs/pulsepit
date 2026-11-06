@@ -36,4 +36,5 @@ export const API_ERROR_MESSAGES: Record<string, string> = {
     'Gestionnaire de packages non détecté ou non pris en charge.',
   COMMAND_FAILED: 'La commande de diagnostic a échoué.',
   INVALID_OUTPUT: 'Le diagnostic a renvoyé un résultat inexploitable.',
+  INSTALL_RUNNING: 'Une installation est déjà en cours sur ce dépôt.',
 };

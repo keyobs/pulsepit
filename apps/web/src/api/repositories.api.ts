@@ -1,10 +1,14 @@
-import { LIST_REQUEST_TIMEOUT_MS } from '@constants/api';
+import {
+  INSTALL_REQUEST_TIMEOUT_MS,
+  LIST_REQUEST_TIMEOUT_MS,
+} from '@constants/api';
 import {
   BeaconMonitoringResponse,
   BranchesResponse,
   ChecksOperation,
   DeploymentsResponse,
   FetchResponse,
+  InstallResponse,
   ListRepositoriesResponse,
   MonitoringResponse,
   OriginResponse,
@@ -47,6 +51,14 @@ export const getOutdated = (path: string) =>
     method: 'POST',
     body: { path },
     schema: OutdatedResponse,
+  });
+
+export const installDependencies = (path: string) =>
+  apiRequest(`${BASE}/install`, {
+    method: 'POST',
+    body: { path },
+    schema: InstallResponse,
+    timeoutMs: INSTALL_REQUEST_TIMEOUT_MS,
   });
 
 export const getPackage = (path: string, ref: PackageRef = 'head') =>

@@ -128,6 +128,7 @@ else {
     assert.deepEqual(await getOutdatedDependencies(repository), {
       packageManager: 'npm',
       dependencies: [],
+      packages: [],
       error: null,
     });
   });
@@ -278,6 +279,7 @@ else {
       assert.deepEqual(await getOutdatedDependencies(repository), {
         packageManager: 'pnpm',
         dependencies: [],
+        packages: [],
         error: null,
       });
     },
@@ -453,6 +455,7 @@ else {
         assert.deepEqual(await getOutdatedDependencies(repository), {
           packageManager: 'yarn',
           dependencies: [],
+          packages: [],
           error: null,
         });
         await yarnFixture({
@@ -464,6 +467,7 @@ else {
         assert.deepEqual(await getOutdatedDependencies(repository), {
           packageManager: 'yarn',
           dependencies: [],
+          packages: [],
           error: null,
         });
       },

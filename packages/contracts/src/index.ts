@@ -39,6 +39,7 @@ export {
   GithubActionsRunsResponse,
 } from './github-actions.js';
 export { GitHook, GitHookFile, RepositoryHooksResponse } from './hooks.js';
+export { InstallRequest, InstallResponse } from './install.js';
 export {
   DeploymentCheck,
   MonitoringRequest,
@@ -49,6 +50,7 @@ export {
   OutdatedDependency,
   OutdatedRequest,
   OutdatedResponse,
+  PackageDependency,
   RegistryDiagnosticCode,
 } from './outdated.js';
 export { PackageResponse } from './package.js';
@@ -61,7 +63,9 @@ export {
   Repository,
   RepositoryBeacon,
   RepositorySync,
+  RepositoryToolchain,
   ScanError,
+  ToolVersion,
 } from './repositories.js';
 export {
   PushLocks,

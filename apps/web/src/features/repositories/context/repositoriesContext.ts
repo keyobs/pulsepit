@@ -3,6 +3,7 @@ import { createContext } from 'react';
 import type { useDeploymentActions } from '../hooks/useDeploymentActions';
 import type { useExpandedRepositories } from '../hooks/useExpandedRepositories';
 import type { useFetchActions } from '../hooks/useFetchActions';
+import type { useInstallActions } from '../hooks/useInstallActions';
 import type { useOutdatedActions } from '../hooks/useOutdatedActions';
 import type { useRepositoryFilters } from '../hooks/useRepositoryFilters';
 
@@ -12,6 +13,7 @@ export interface RepositoriesContextValue {
   view: ReturnType<typeof useExpandedRepositories>;
   fetching: ReturnType<typeof useFetchActions>;
   diagnostics: ReturnType<typeof useOutdatedActions>;
+  installs: ReturnType<typeof useInstallActions>;
   deployments: ReturnType<typeof useDeploymentActions>;
 }
 

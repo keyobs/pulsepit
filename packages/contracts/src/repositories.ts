@@ -35,6 +35,27 @@ export const PackageManagerDetection = z.object({
 
 export type PackageManagerDetection = z.infer<typeof PackageManagerDetection>;
 
+export const ToolVersion = z.object({
+  version: z.string(),
+  source: z.enum([
+    '.nvmrc',
+    '.node-version',
+    'volta',
+    'engines',
+    'packageManager',
+  ]),
+});
+
+export type ToolVersion = z.infer<typeof ToolVersion>;
+
+// Versions declared by the repository, not the ones installed on this machine.
+export const RepositoryToolchain = z.object({
+  node: ToolVersion.nullable(),
+  packageManager: ToolVersion.nullable(),
+});
+
+export type RepositoryToolchain = z.infer<typeof RepositoryToolchain>;
+
 export const RepositorySync = z.object({
   upstream: z.string().nullable(),
   ahead: z.number().int().nonnegative().nullable(),
@@ -63,6 +84,7 @@ export const Repository = z.object({
   engines: z.record(z.string(), z.string()).nullable(),
   enginesError: z.string().nullable(),
   packageManager: PackageManagerDetection,
+  toolchain: RepositoryToolchain,
   origin: OriginRemote.nullable(),
   originError: z.string().nullable(),
   urls: z.record(z.string(), z.string()),

@@ -474,6 +474,16 @@ Point distinct du beacon, corrigé le 2026-10-22 : les commandes Git et diagnost
 
 Un service local prépare l'inventaire des hooks effectifs en lecture seule, y compris les wrappers Husky et les worktrees, sans interpréter leur politique de branches. Le raccordement HTTP est une étape distincte soumise au contrat front/back. Seuls les neuf nouveaux tests environnement/découverte sont exécutés ; ils passent, avec TypeScript API et Biome ciblé. Vérification réelle sur betbasile : trois hooks Husky découverts sans exécution, accès GitHub en lecture conservé avec l'environnement filtré. Aucun push réel ni suite existante exécutés.
 
+## 26. Diagnostic HTTP des hooks Git
+
+`GET /api/repositories/hooks?path=…` expose désormais cet inventaire à la demande, dans le même périmètre de découverte que les autres routes. La liste et le détail des dépôts ne déclenchent pas cette inspection. Une requête incorrecte retourne HTTP 400 ; un dépôt absent ou hors périmètre retourne HTTP 404.
+
+Le contrat partagé `RepositoryHooksResponse` contient `path`, `directory`, `source`, `directoryState`, `hooks` et `error`. Les trois entrées `pre-commit`, `commit-msg`, `pre-push` restent présentes dans cet ordre. Chaque fichier décrit son chemin et son état : `missing`, `executable`, `not_executable`, `unreadable` ou `unsupported`. Pour un wrapper Husky reconnu, le chargeur et le script source sont décrits séparément ; sinon `husky` vaut `null`. Ces permissions ne permettent pas de conclure à une autorisation de push ou à l'inactivité de Husky : son chargeur et ses scripts peuvent être lus par le shell sans être exécutables directement.
+
+Une lecture Git impossible conserve HTTP 200 avec `error.code` égal à `HOOKS_READ_FAILED` ou `TIMEOUT`. Le dossier, sa source et son état deviennent `null` ; les trois entrées ont chacune `file: { path: null, state: 'unsupported' }` et `husky: null`. Le contrat refuse les réponses contradictoires et les listes incomplètes ou désordonnées. Aucun contenu de script, détail de commande ou stderr brut n'est retourné.
+
+Les cinq nouveaux tests de `git-hooks-routes.test.ts` passent : hooks par défaut et personnalisés sans exécution, Husky et worktrees, validation et périmètre, erreurs Git et délai, cohérence du contrat partagé. L'attente d'un ancien test de découverte est adaptée à la forme stable sans relancer ce test. Compilation des contrats, TypeScript API/front et Biome ciblé réussis. Une consultation réelle en lecture seule sur betbasile retourne HTTP 200, les trois hooks Husky et aucun diagnostic d'erreur ; aucun hook ni push exécuté.
+
 ## 27. Surveillance périodique des balises (v1)
 
 Décision utilisatrice du 2026-10-25 : voir dans Pulsepit qu'un site est down, lorsque Pulsepit tourne sur sa machine. Aucune notification externe pour le moment.

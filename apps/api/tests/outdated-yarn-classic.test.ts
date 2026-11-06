@@ -108,6 +108,7 @@ test('Classic normalizes standalone and workspace tables, preserves repeated pac
   assert.deepEqual(OutdatedResponse.parse(first.json()), {
     path,
     packageManager: 'yarn',
+    packages: [],
     dependencies: [
       {
         name: '@scope/library',

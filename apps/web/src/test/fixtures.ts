@@ -33,6 +33,7 @@ export function makeRepository(
     engines: null,
     enginesError: null,
     packageManager: { name: 'pnpm', source: 'lockfile', error: null },
+    toolchain: { node: null, packageManager: null },
     origin: {
       name: 'origin',
       url: 'https://github.com/keyobs/mon-app',
