@@ -130,6 +130,7 @@ describe('repositories api', () => {
         path: PATH,
         packageManager: 'pnpm',
         dependencies: [],
+        packages: [],
         error: null,
       }),
     );

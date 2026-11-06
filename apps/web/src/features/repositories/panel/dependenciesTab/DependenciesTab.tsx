@@ -1,4 +1,4 @@
-import type { Repository } from '@api/types';
+import type { Repository, ToolVersion } from '@api/types';
 import { Button } from '@components/button/Button';
 import { Chip } from '@components/chip/Chip';
 import { EmptyState } from '@components/emptyState/EmptyState';
@@ -17,12 +17,18 @@ interface DependenciesTabProps {
   repository: Repository;
 }
 
+const sourceOf = (tool: ToolVersion | null) =>
+  tool
+    ? `Déclaré dans ${tool.source}`
+    : 'Aucune version déclarée dans le dépôt';
+
 export const DependenciesTab = ({ repository }: DependenciesTabProps) => {
   const { outdated, install } = useRepositoryRuntime(repository.path);
   const manifest = useDisclosure();
   const { status, data, error } = outdated.state;
   const beacon = useBeaconVersion(repository.path, repository.beacon.package);
   const retryAt = useRetryDeadline(error);
+  const { toolchain } = repository;
 
   return (
     <div className="pp-dependencies-tab">
@@ -59,7 +65,14 @@ export const DependenciesTab = ({ repository }: DependenciesTabProps) => {
           {manifest.isOpen ? 'Masquer package.json' : 'Voir package.json'}
         </Button>
         <span className="pp-dependencies-tab-manager">
-          Détecté : {repository.packageManager.name ?? 'aucun'}
+          <span title={sourceOf(toolchain.packageManager)}>
+            {repository.packageManager.name ?? 'Gestionnaire non détecté'}
+            {toolchain.packageManager && ` ${toolchain.packageManager.version}`}
+          </span>
+          {' · '}
+          <span title={sourceOf(toolchain.node)}>
+            Node {toolchain.node?.version ?? 'non précisé'}
+          </span>
         </span>
         <span className="pp-dependencies-tab-beacon">
           Beacon :{' '}
@@ -80,7 +93,7 @@ export const DependenciesTab = ({ repository }: DependenciesTabProps) => {
       {data === null && status !== 'error' && (
         <EmptyState>Aucun diagnostic lancé pour ce dépôt.</EmptyState>
       )}
-      {data && <OutdatedTable dependencies={data.dependencies} />}
+      {data && <OutdatedTable report={data} />}
       {manifest.isOpen && <PackageJsonViewer path={repository.path} />}
     </div>
   );
