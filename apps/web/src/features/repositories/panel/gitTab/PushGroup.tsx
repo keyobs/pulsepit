@@ -6,10 +6,14 @@ import { useEffect } from 'react';
 import { TbShieldCheck } from 'react-icons/tb';
 import { useChecksRun } from '../../hooks/useChecksRun';
 import { usePushAction } from '../../hooks/usePushAction';
+import { usePushLock } from '../../hooks/usePushLock';
 import { ChecksStatus } from './ChecksStatus';
 import { PushBranchMenu } from './PushBranchMenu';
+import { PushLockButton } from './PushLockButton';
 import { getPushAvailability } from './pushAvailability';
 import './pushGroup.less';
+
+const MAIN_BRANCHES = ['main', 'develop'];
 
 interface PushGroupProps {
   repository: Repository;
@@ -19,6 +23,7 @@ export const PushGroup = ({ repository }: PushGroupProps) => {
   const { push, isPushing } = usePushAction(repository.path);
   const { data, run } = useBranches(repository.path);
   const checks = useChecksRun(repository.path, () => void run());
+  const locks = usePushLock(repository.path, () => void run());
 
   useEffect(() => {
     void run();
@@ -28,10 +33,6 @@ export const PushGroup = ({ repository }: PushGroupProps) => {
   const current = branches.find((branch) => branch.isCurrent);
   const pushBranch = (name: string) =>
     push(name, branches.find((b) => b.name === name)?.checksId ?? undefined);
-  const main = getPushAvailability(branches.find((b) => b.name === 'main'));
-  const develop = getPushAvailability(
-    branches.find((b) => b.name === 'develop'),
-  );
   return (
     <>
       <div className="pp-push-group">
@@ -49,24 +50,30 @@ export const PushGroup = ({ repository }: PushGroupProps) => {
             Annuler
           </Button>
         )}
-        <Button
-          icon={<PushIcon />}
-          loading={isPushing}
-          disabled={!main.canAttempt}
-          title={main.reason ?? undefined}
-          onClick={() => void pushBranch('main')}
-        >
-          Push main
-        </Button>
-        <Button
-          icon={<PushIcon />}
-          loading={isPushing}
-          disabled={!develop.canAttempt}
-          title={develop.reason ?? undefined}
-          onClick={() => void pushBranch('develop')}
-        >
-          Push develop
-        </Button>
+        {MAIN_BRANCHES.map((name) => {
+          const branch = branches.find((b) => b.name === name);
+          if (name === 'develop' && !branch) return null;
+          const availability = getPushAvailability(branch);
+          return (
+            <span key={name} className="pp-push-pair">
+              <PushLockButton
+                branch={name}
+                scope={locks.scopeOf(name)}
+                loading={locks.savingBranch === name}
+                onToggle={() => void locks.toggle(name)}
+              />
+              <Button
+                icon={<PushIcon />}
+                loading={isPushing}
+                disabled={!availability.canAttempt}
+                title={availability.reason ?? undefined}
+                onClick={() => void pushBranch(name)}
+              >
+                Push {name}
+              </Button>
+            </span>
+          );
+        })}
         <PushBranchMenu
           branches={branches}
           disabled={isPushing}

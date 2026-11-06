@@ -4,4 +4,15 @@
   justify-content: flex-end;
   gap: 14px 30px;
   margin-left: auto;
+
+  .pp-push-pair {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .pp-push-lock[aria-pressed="true"] {
+    border-color: var(--warn);
+    color: var(--warn);
+  }
 }
