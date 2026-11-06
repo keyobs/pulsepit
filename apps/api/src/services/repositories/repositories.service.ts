@@ -17,6 +17,7 @@ import {
   getPackageVersions,
 } from '../packages/package.service.js';
 import { detectPackageManager } from '../packages/package-manager.service.js';
+import { getRepositoryToolchain } from '../packages/toolchain.service.js';
 
 // Deployment links are added by the route after scanning local repositories.
 export type Repository = Omit<
@@ -102,6 +103,7 @@ async function inspectRepository(
   } catch {
     gitError = 'Unable to read Git status for this repository.';
   }
+  const packageManager = await detectPackageManager(path);
   return {
     ...repository,
     git,
@@ -111,7 +113,8 @@ async function inspectRepository(
     lastActivityAt: await getLastActivityAt(path),
     versions: await getPackageVersions(path),
     ...(await getPackageEngines(path)),
-    packageManager: await detectPackageManager(path),
+    packageManager,
+    toolchain: await getRepositoryToolchain(path, packageManager.name),
     ...(await getOriginRemote(path)),
   };
 }

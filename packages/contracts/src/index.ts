@@ -50,6 +50,7 @@ export {
   OutdatedDependency,
   OutdatedRequest,
   OutdatedResponse,
+  PackageDependency,
   RegistryDiagnosticCode,
 } from './outdated.js';
 export { PackageResponse } from './package.js';
@@ -62,7 +63,9 @@ export {
   Repository,
   RepositoryBeacon,
   RepositorySync,
+  RepositoryToolchain,
   ScanError,
+  ToolVersion,
 } from './repositories.js';
 export {
   PushLocks,

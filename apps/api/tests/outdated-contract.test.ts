@@ -91,6 +91,7 @@ test('outdated contracts parse normalized npm, pnpm and modern Yarn reports, inc
     assert.deepEqual(parsed, {
       path,
       packageManager: manager,
+      packages: [],
       dependencies: [
         {
           name: 'shared',
@@ -111,6 +112,7 @@ test('outdated contracts parse normalized npm, pnpm and modern Yarn reports, inc
     path,
     packageManager: 'yarn',
     dependencies: [],
+    packages: [],
     error: null,
   });
 });

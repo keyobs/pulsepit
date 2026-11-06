@@ -6,6 +6,12 @@ import type {
   RegistryDiagnosticCode,
 } from '@pulsepit/contracts';
 import { createCommandEnvironment } from '../processes/command-environment.service.js';
+import {
+  buildPackageInventory,
+  isPrivatePackage,
+  readDeclaredDependencies,
+  readPrivateScopes,
+} from './package-inventory.service.js';
 import { detectPackageManager } from './package-manager.service.js';
 import { registryDiagnostic } from './registry-diagnostic.service.js';
 import { getYarnOutdatedDependencies } from './yarn-outdated.service.js';
@@ -14,18 +20,20 @@ const execute = promisify(execFile);
 
 export type { OutdatedDependency } from '@pulsepit/contracts';
 
-export type OutdatedResult =
-  | Omit<OutdatedResponse, 'path'>
-  | {
-      code:
-        | 'PACKAGE_MANAGER'
-        | 'TIMEOUT'
-        | 'COMMAND_FAILED'
-        | 'INVALID_OUTPUT'
-        | RegistryDiagnosticCode;
-      error: string;
-      resetAt?: string;
-    };
+type OutdatedFailure = {
+  code:
+    | 'PACKAGE_MANAGER'
+    | 'TIMEOUT'
+    | 'COMMAND_FAILED'
+    | 'INVALID_OUTPUT'
+    | RegistryDiagnosticCode;
+  error: string;
+  resetAt?: string;
+};
+export type OutdatedReport =
+  | Omit<OutdatedResponse, 'path' | 'packages'>
+  | OutdatedFailure;
+export type OutdatedResult = Omit<OutdatedResponse, 'path'> | OutdatedFailure;
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -137,20 +145,52 @@ export async function getOutdatedDependencies(
         manager.error ?? 'No package manager detected for this repository.',
     };
   }
-  if (manager.name === 'yarn') {
-    return getYarnOutdatedDependencies(repositoryPath);
-  }
+  const declared = await readDeclaredDependencies(repositoryPath).catch(
+    () => [],
+  );
+  const scopes = await readPrivateScopes(repositoryPath);
+  const isPrivate = (name: string) => isPrivatePackage(name, scopes);
+  // With private packages, only public ones are queried: their registry may be unreachable.
+  const hasPrivate = declared.some(({ name }) => isPrivate(name));
+  const publicNames = hasPrivate
+    ? declared.map(({ name }) => name).filter((name) => !isPrivate(name))
+    : [];
+  const report: OutdatedReport = hasPrivate && !publicNames.length
+    ? { packageManager: manager.name, dependencies: [], error: null }
+    : manager.name === 'yarn'
+      ? await getYarnOutdatedDependencies(
+          repositoryPath,
+          publicNames,
+          isPrivate,
+        )
+      : await collectOutdated(repositoryPath, manager.name, publicNames);
+  if (report.error !== null) return report;
+  return {
+    ...report,
+    packages: await buildPackageInventory(
+      repositoryPath,
+      declared,
+      report.dependencies,
+      scopes,
+    ),
+  };
+}
 
-  const name = manager.name;
+async function collectOutdated(
+  repositoryPath: string,
+  name: 'npm' | 'pnpm',
+  packageNames: string[],
+): Promise<OutdatedReport> {
   const args =
     name === 'npm'
-      ? ['outdated', '--json', '--ignore-scripts']
+      ? ['outdated', '--json', '--ignore-scripts', ...packageNames]
       : [
           '--recursive',
           '--include-workspace-root',
           'outdated',
           '--format',
           'json',
+          ...packageNames,
         ];
 
   let output: string;
