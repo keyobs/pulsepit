@@ -1,7 +1,8 @@
 import { Button } from '@components/button/Button';
 import { IconButton } from '@components/iconButton/IconButton';
 import { useState } from 'react';
-import { TbPlus, TbTrash } from 'react-icons/tb';
+import { TbFolderOpen, TbPlus, TbTrash } from 'react-icons/tb';
+import { FolderBrowser } from './FolderBrowser';
 
 interface ScanPathsSectionProps {
   paths: string[];
@@ -16,6 +17,7 @@ export const ScanPathsSection = ({
   onChange,
 }: ScanPathsSectionProps) => {
   const [input, setInput] = useState('');
+  const [browsing, setBrowsing] = useState(false);
   const candidate = input.trim();
 
   const add = () => {
@@ -70,7 +72,24 @@ export const ScanPathsSection = ({
         >
           Ajouter
         </Button>
+        <Button
+          size="small"
+          icon={<TbFolderOpen />}
+          aria-expanded={browsing}
+          onClick={() => setBrowsing((open) => !open)}
+        >
+          Parcourir…
+        </Button>
       </form>
+      {browsing && (
+        <FolderBrowser
+          onPick={(path) => {
+            if (!paths.includes(path)) onChange([...paths, path]);
+            setBrowsing(false);
+          }}
+          onClose={() => setBrowsing(false)}
+        />
+      )}
     </section>
   );
 };
