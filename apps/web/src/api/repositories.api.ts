@@ -1,6 +1,7 @@
 import {
   INSTALL_REQUEST_TIMEOUT_MS,
   LIST_REQUEST_TIMEOUT_MS,
+  OUTDATED_REQUEST_TIMEOUT_MS,
 } from '@constants/api';
 import {
   BeaconMonitoringResponse,
@@ -51,6 +52,7 @@ export const getOutdated = (path: string) =>
     method: 'POST',
     body: { path },
     schema: OutdatedResponse,
+    timeoutMs: OUTDATED_REQUEST_TIMEOUT_MS,
   });
 
 export const installDependencies = (path: string) =>

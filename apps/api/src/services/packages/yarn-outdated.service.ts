@@ -138,7 +138,7 @@ export async function getYarnOutdatedDependencies(
   packageNames: string[] = [],
   isPrivate: (name: string) => boolean = () => false,
 ): Promise<OutdatedReport> {
-  const deadline = Date.now() + 30_000;
+  const deadline = Date.now() + 90_000;
   async function run(
     args: string[],
     outdated = false,
@@ -147,7 +147,7 @@ export async function getYarnOutdatedDependencies(
     if (remaining <= 0)
       throw new DiagnosticError(
         'TIMEOUT',
-        'Dependency check timed out after 30 seconds.',
+        'Dependency check timed out after 90 seconds.',
       );
     try {
       const { stdout, stderr } = await execute('yarn', args, {
@@ -181,7 +181,7 @@ export async function getYarnOutdatedDependencies(
       if (failure.signal === 'SIGKILL')
         throw new DiagnosticError(
           'TIMEOUT',
-          'Dependency check timed out after 30 seconds.',
+          'Dependency check timed out after 90 seconds.',
         );
       const registry = registryDiagnostic(
         'yarn',

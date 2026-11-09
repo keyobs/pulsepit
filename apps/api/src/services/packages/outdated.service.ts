@@ -198,7 +198,7 @@ async function collectOutdated(
   try {
     const result = await execute(name, args, {
       cwd: repositoryPath,
-      timeout: 30_000,
+      timeout: 90_000,
       killSignal: 'SIGKILL',
       maxBuffer: 1024 * 1024,
       encoding: 'utf8',
@@ -222,7 +222,7 @@ async function collectOutdated(
     if (failure.signal === 'SIGKILL') {
       return {
         code: 'TIMEOUT',
-        error: 'Dependency check timed out after 30 seconds.',
+        error: 'Dependency check timed out after 90 seconds.',
       };
     }
     const registry = registryDiagnostic(

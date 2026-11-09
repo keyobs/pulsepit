@@ -1,7 +1,10 @@
 export const API_BASE = '/api';
 
-/** Délai maximal d'une requête ordinaire (le back limite fetch, push et diagnostic à 30 s). */
+/** Délai maximal d'une requête ordinaire (le back limite fetch et push à 30 s). */
 export const DEFAULT_REQUEST_TIMEOUT_MS = 60_000;
+
+/** Le diagnostic des dépendances est limité à 90 s côté back. */
+export const OUTDATED_REQUEST_TIMEOUT_MS = 120_000;
 
 /** Le scan enrichit les dépôts un par un et n'a pas de délai global côté back. */
 export const LIST_REQUEST_TIMEOUT_MS = 180_000;
