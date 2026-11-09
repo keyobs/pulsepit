@@ -1,6 +1,7 @@
 import { dirname, join } from 'node:path';
 import Fastify from 'fastify';
 import type { AppConfig } from './config.js';
+import { directoriesRoutes } from './routes/directories.routes.js';
 import { healthRoutes } from './routes/health.routes.js';
 import { repositoriesRoutes } from './routes/repositories/index.js';
 import { settingsRoutes } from './routes/settings.routes.js';
@@ -48,6 +49,7 @@ export function buildApp(
 
   app.register(healthRoutes, { prefix: '/api' });
   app.register(settingsRoutes, { prefix: '/api', settings, rescan });
+  app.register(directoriesRoutes, { prefix: '/api' });
   app.register(repositoriesRoutes, {
     prefix: '/api/repositories',
     scanPaths: config.scanPaths,

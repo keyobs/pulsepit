@@ -18,6 +18,7 @@ export {
   DeploymentMetadataError,
   DeploymentsResponse,
 } from './deployments.js';
+export { DirectoryEntry, DirectoryListResponse } from './directories.js';
 export { ErrorResponse } from './errors.js';
 export {
   FetchRequest,

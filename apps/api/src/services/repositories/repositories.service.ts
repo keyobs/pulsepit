@@ -35,7 +35,7 @@ export interface ScanResult {
 
 const excludedDirectories = new Set(['.git', 'node_modules']);
 
-async function hasGitMarker(path: string): Promise<boolean> {
+export async function hasGitMarker(path: string): Promise<boolean> {
   try {
     const marker = await lstat(join(path, '.git'));
     return marker.isDirectory() || marker.isFile();
