@@ -1,5 +1,6 @@
 import type { OutdatedResponse } from '@api/types';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { OutdatedTable, toPackageRows } from './OutdatedTable';
 
 const report: OutdatedResponse = {
@@ -77,5 +78,26 @@ describe('OutdatedTable', () => {
       'title',
       'Registre privé : non interrogé par le diagnostic',
     );
+  });
+
+  it('copies the install command of a target or latest version', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    });
+    render(<OutdatedTable report={report} />);
+    expect(screen.getAllByTitle(/^Copier : /)).toHaveLength(7);
+    expect(
+      screen.getByTitle('Copier : npm install typescript@5.9.2 -D'),
+    ).toBeInTheDocument();
+
+    await userEvent.click(
+      screen.getByTitle('Copier : npm install react@20.0.0'),
+    );
+    expect(writeText).toHaveBeenCalledWith('npm install react@20.0.0');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cible' }));
+    expect(writeText).toHaveBeenLastCalledWith('npm update');
   });
 });

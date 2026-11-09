@@ -5,7 +5,7 @@ import './dataTable.less';
 
 export interface DataTableColumn<Row> {
   key: string;
-  header: string;
+  header: ReactNode;
   render: (row: Row) => ReactNode;
   mono?: boolean;
 }

@@ -15,6 +15,40 @@
     color: var(--muted);
   }
 
+  .pp-dependencies-tab-version {
+    position: relative;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-decoration: underline dotted var(--muted);
+    text-underline-offset: 3px;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    cursor: pointer;
+
+    &:hover {
+      color: var(--accent);
+    }
+
+    svg {
+      position: absolute;
+      top: 50%;
+      left: 100%;
+      margin-left: 4px;
+      transform: translateY(-50%);
+    }
+  }
+
+  th .pp-dependencies-tab-version {
+    text-decoration: none;
+
+    &:hover {
+      color: inherit;
+    }
+  }
+
   .pp-dependencies-tab-summary {
     display: flex;
     flex-wrap: wrap;
