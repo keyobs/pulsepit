@@ -5,7 +5,8 @@ interface ScanFoldersProps {
   paths: string[];
 }
 
-/** Dossiers scannés : une ligne s'il n'y en a qu'un, sinon une liste repliée qui flotte au-dessus du contenu. */
+/** Dossiers scannés : une ligne s'il n'y en a qu'un, sinon
+ * une liste repliée qui flotte au-dessus du contenu. */
 export const ScanFolders = ({ paths }: ScanFoldersProps) => {
   if (paths.length === 0)
     return <div className="pp-scan-folders">Aucun dossier scanné</div>;
