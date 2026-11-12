@@ -14,11 +14,12 @@ interface CommandTarget {
   version: string;
   section: Section | null;
   workspace: string | null;
+  directory?: string | null;
 }
 
 export function installCommand(
   manager: Manager,
-  { name, version, section, workspace }: CommandTarget,
+  { name, version, section, workspace, directory }: CommandTarget,
 ): string {
   const spec = `${name}@${version}`;
   const flag = section ? SECTION_FLAGS[manager][section] : undefined;
@@ -32,7 +33,8 @@ export function installCommand(
             spec,
             flag,
           ];
-  return parts.filter(Boolean).join(' ');
+  const command = parts.filter(Boolean).join(' ');
+  return directory ? `cd ${directory} && ${command}` : command;
 }
 
 export const UPGRADE_ALL_COMMANDS: Record<

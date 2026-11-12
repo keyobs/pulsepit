@@ -1,22 +1,12 @@
-import type { OutdatedResponse, PackageDependency } from '@api/types';
+import type { OutdatedResponse } from '@api/types';
 import { Chip } from '@components/chip/Chip';
 import {
   DataTable,
   type DataTableColumn,
 } from '@components/dataTable/DataTable';
 import { installCommand, UPGRADE_ALL_COMMANDS } from './packageCommand';
+import { countStatus, groupOf, type PackageRow } from './packageViews';
 import { VersionCopy } from './VersionCopy';
-
-interface PackageRow {
-  key: string;
-  name: string;
-  installed: string | null;
-  wanted: string | null;
-  latest: string | null;
-  status: PackageDependency['status'];
-  section: PackageDependency['section'] | null;
-  workspace: string | null;
-}
 
 type Manager = OutdatedResponse['packageManager'];
 
@@ -25,7 +15,6 @@ const STATUS = {
   current: { label: 'À jour', variant: 'ok' },
   private: { label: 'Privé', variant: 'neutral' },
 } as const;
-const ORDER = { outdated: 0, current: 1, private: 2 };
 
 const renderVersion = (
   manager: Manager,
@@ -38,7 +27,7 @@ const renderVersion = (
   return (
     <VersionCopy
       label={version}
-      command={installCommand(manager, { ...row, version })}
+      command={installCommand(row.manager ?? manager, { ...row, version })}
     />
   );
 };
@@ -47,8 +36,7 @@ const columns = (manager: Manager): DataTableColumn<PackageRow>[] => [
   {
     key: 'name',
     header: 'Package',
-    render: (row) =>
-      row.workspace ? `${row.name} (${row.workspace})` : row.name,
+    render: (row) => (row.owner ? `${row.name} (${row.owner})` : row.name),
   },
   {
     key: 'installed',
@@ -96,58 +84,28 @@ const columns = (manager: Manager): DataTableColumn<PackageRow>[] => [
   },
 ];
 
-/** Paquets du package.json racine, plus les paquets obsolètes des workspaces. */
-export function toPackageRows(report: OutdatedResponse): PackageRow[] {
-  const rows: PackageRow[] = report.packages.map((dependency) => ({
-    key: dependency.name,
-    name: dependency.name,
-    installed: dependency.installed,
-    wanted: dependency.wanted,
-    latest: dependency.latest,
-    status: dependency.status,
-    section: dependency.section,
-    workspace: null,
-  }));
-  const root = new Set(report.packages.map(({ name }) => name));
-  for (const dependency of report.dependencies) {
-    if (root.has(dependency.name)) continue;
-    rows.push({
-      key: `${dependency.name}:${dependency.location ?? dependency.dependent ?? ''}`,
-      name: dependency.name,
-      installed: dependency.current,
-      wanted: dependency.wanted,
-      latest: dependency.latest,
-      status: 'outdated',
-      section: null,
-      workspace: dependency.dependent,
-    });
-  }
-  return rows.sort(
-    (a, b) => ORDER[a.status] - ORDER[b.status] || a.name.localeCompare(b.name),
-  );
-}
-
 interface OutdatedTableProps {
-  report: OutdatedResponse;
+  manager: Manager;
+  rows: PackageRow[];
 }
 
-export const OutdatedTable = ({ report }: OutdatedTableProps) => {
-  const rows = toPackageRows(report);
-  const count = (status: PackageRow['status']) =>
-    rows.filter((row) => row.status === status).length;
+export const OutdatedTable = ({ manager, rows }: OutdatedTableProps) => {
+  const outdated = countStatus(rows, 'outdated');
+  const privates = countStatus(rows, 'private');
   return (
     <>
       <div className="pp-dependencies-tab-summary">
-        <Chip variant={count('outdated') ? 'warn' : 'ok'}>
-          {count('outdated')} à mettre à jour
+        <Chip variant={outdated ? 'warn' : 'ok'}>
+          {outdated} à mettre à jour
         </Chip>
-        <Chip>{count('current')} à jour</Chip>
-        {count('private') > 0 && <Chip>{count('private')} privé(s)</Chip>}
+        <Chip>{countStatus(rows, 'current')} à jour</Chip>
+        {privates > 0 && <Chip>{privates} privé(s)</Chip>}
       </div>
       <DataTable
-        columns={columns(report.packageManager)}
+        columns={columns(manager)}
         rows={rows}
         getRowKey={(row) => row.key}
+        getGroup={groupOf}
         emptyText="Aucune dépendance déclarée."
       />
     </>

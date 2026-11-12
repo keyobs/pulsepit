@@ -38,6 +38,7 @@ export type {
   ToolVersion,
   WorkflowEntry,
   WorkflowsResponse,
+  WorkspacePackages,
 } from '@pulsepit/contracts';
 
 export type PackageRef = 'head' | 'main' | 'develop';

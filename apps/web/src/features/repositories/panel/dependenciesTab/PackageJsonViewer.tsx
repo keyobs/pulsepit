@@ -7,11 +7,15 @@ import './packageJsonViewer.less';
 
 interface PackageJsonViewerProps {
   path: string;
+  workspace?: string;
 }
 
 /** Contenu du package.json de HEAD, lu depuis Git (les modifications non commitées sont ignorées). */
-export const PackageJsonViewer = ({ path }: PackageJsonViewerProps) => {
-  const { data, status, error, run } = usePackageManifest(path);
+export const PackageJsonViewer = ({
+  path,
+  workspace,
+}: PackageJsonViewerProps) => {
+  const { data, status, error, run } = usePackageManifest(path, workspace);
 
   useEffect(() => {
     void run('head');

@@ -47,8 +47,14 @@ describe('repository action hooks', () => {
   it('usePackageManifest reads HEAD by default and another ref on request', async () => {
     const { result } = renderHook(() => usePackageManifest(PATH));
     await act(async () => void (await result.current.run()));
-    expect(api.getPackage).toHaveBeenLastCalledWith(PATH, 'head');
+    expect(api.getPackage).toHaveBeenLastCalledWith(PATH, 'head', undefined);
     await act(async () => void (await result.current.run('develop')));
-    expect(api.getPackage).toHaveBeenLastCalledWith(PATH, 'develop');
+    expect(api.getPackage).toHaveBeenLastCalledWith(PATH, 'develop', undefined);
+  });
+
+  it('usePackageManifest reads the package.json of a workspace', async () => {
+    const { result } = renderHook(() => usePackageManifest(PATH, 'apps/web'));
+    await act(async () => void (await result.current.run()));
+    expect(api.getPackage).toHaveBeenLastCalledWith(PATH, 'head', 'apps/web');
   });
 });

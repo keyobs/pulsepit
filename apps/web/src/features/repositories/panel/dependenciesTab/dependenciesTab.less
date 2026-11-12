@@ -7,12 +7,55 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
+    justify-content: space-between;
     gap: 12px;
   }
 
-  .pp-dependencies-tab-manager,
-  .pp-dependencies-tab-beacon {
-    color: var(--muted);
+  .pp-dependencies-tab-actions,
+  .pp-dependencies-tab-infos {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .pp-dependencies-tab-actions {
+    gap: 8px;
+  }
+
+  .pp-dependencies-tab-infos {
+    gap: 16px;
+  }
+
+  .pp-dependencies-tab-info {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+
+    > [role="img"] {
+      display: inline-flex;
+    }
+
+    &.muted {
+      color: var(--off);
+      opacity: 0.75;
+    }
+  }
+
+  .pp-tabs {
+    height: 40px;
+  }
+
+  .pp-dependencies-tab-count {
+    margin-left: 6px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: var(--warn-soft);
+    color: var(--warn);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-style: normal;
   }
 
   .pp-dependencies-tab-version {
