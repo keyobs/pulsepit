@@ -1,3 +1,5 @@
+@import "@styles/mixins.less";
+
 .pp-chip {
   display: inline-flex;
   align-items: center;
@@ -27,5 +29,18 @@
   &.accent {
     background: var(--accent-soft);
     color: var(--accent);
+  }
+
+  &.truncated {
+    max-width: 100%;
+    min-width: 0;
+
+    svg {
+      flex-shrink: 0;
+    }
+  }
+
+  .pp-chip-text {
+    .truncate();
   }
 }

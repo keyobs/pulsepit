@@ -20,7 +20,12 @@ export const GitCell = ({ repository }: GitCellProps) => {
           </Chip>
         ) : (
           <>
-            <Chip variant="accent" icon={<TbGitBranch aria-hidden="true" />}>
+            <Chip
+              variant="accent"
+              icon={<TbGitBranch aria-hidden="true" />}
+              title={git.branch ?? 'detached'}
+              truncate
+            >
               {git.branch ?? 'detached'}
             </Chip>
             {git.isClean ? (
