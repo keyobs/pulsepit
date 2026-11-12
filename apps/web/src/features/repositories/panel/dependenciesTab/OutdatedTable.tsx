@@ -4,6 +4,8 @@ import {
   DataTable,
   type DataTableColumn,
 } from '@components/dataTable/DataTable';
+import { installCommand, UPGRADE_ALL_COMMANDS } from './packageCommand';
+import { VersionCopy } from './VersionCopy';
 
 interface PackageRow {
   key: string;
@@ -12,8 +14,11 @@ interface PackageRow {
   wanted: string | null;
   latest: string | null;
   status: PackageDependency['status'];
+  section: PackageDependency['section'] | null;
   workspace: string | null;
 }
+
+type Manager = OutdatedResponse['packageManager'];
 
 const STATUS = {
   outdated: { label: 'À mettre à jour', variant: 'warn' },
@@ -22,7 +27,23 @@ const STATUS = {
 } as const;
 const ORDER = { outdated: 0, current: 1, private: 2 };
 
-const COLUMNS: DataTableColumn<PackageRow>[] = [
+const renderVersion = (
+  manager: Manager,
+  row: PackageRow,
+  version: string | null,
+  always = false,
+) => {
+  if (!version) return '—';
+  if (!always && version === row.installed) return version;
+  return (
+    <VersionCopy
+      label={version}
+      command={installCommand(manager, { ...row, version })}
+    />
+  );
+};
+
+const columns = (manager: Manager): DataTableColumn<PackageRow>[] => [
   {
     key: 'name',
     header: 'Package',
@@ -37,14 +58,24 @@ const COLUMNS: DataTableColumn<PackageRow>[] = [
   },
   {
     key: 'wanted',
-    header: 'Cible',
-    render: (row) => row.wanted ?? '—',
+    header: (
+      <VersionCopy
+        label="Cible"
+        command={UPGRADE_ALL_COMMANDS[manager].wanted}
+      />
+    ),
+    render: (row) => renderVersion(manager, row, row.wanted, true),
     mono: true,
   },
   {
     key: 'latest',
-    header: 'Dernière',
-    render: (row) => row.latest ?? '—',
+    header: (
+      <VersionCopy
+        label="Dernière"
+        command={UPGRADE_ALL_COMMANDS[manager].latest}
+      />
+    ),
+    render: (row) => renderVersion(manager, row, row.latest),
     mono: true,
   },
   {
@@ -74,6 +105,7 @@ export function toPackageRows(report: OutdatedResponse): PackageRow[] {
     wanted: dependency.wanted,
     latest: dependency.latest,
     status: dependency.status,
+    section: dependency.section,
     workspace: null,
   }));
   const root = new Set(report.packages.map(({ name }) => name));
@@ -86,6 +118,7 @@ export function toPackageRows(report: OutdatedResponse): PackageRow[] {
       wanted: dependency.wanted,
       latest: dependency.latest,
       status: 'outdated',
+      section: null,
       workspace: dependency.dependent,
     });
   }
@@ -112,7 +145,7 @@ export const OutdatedTable = ({ report }: OutdatedTableProps) => {
         {count('private') > 0 && <Chip>{count('private')} privé(s)</Chip>}
       </div>
       <DataTable
-        columns={COLUMNS}
+        columns={columns(report.packageManager)}
         rows={rows}
         getRowKey={(row) => row.key}
         emptyText="Aucune dépendance déclarée."

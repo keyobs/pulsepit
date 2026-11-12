@@ -540,7 +540,7 @@ else {
     });
   });
 
-  await t.test('terminates a hung command after 30 seconds', async () => {
+  await t.test('terminates a hung command after 90 seconds', async () => {
     await fixture({}, 0, true);
     const response = await app.inject({
       method: 'POST',

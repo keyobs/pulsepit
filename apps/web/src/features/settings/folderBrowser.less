@@ -1,0 +1,91 @@
+@import "@styles/mixins.less";
+
+.pp-folder-browser {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+
+  button:not(.pp-button) {
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .pp-folder-browser-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .pp-folder-browser-crumbs {
+    display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+    min-width: 0;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+
+    button {
+      padding: 2px 3px;
+      border-radius: var(--radius-s);
+
+      &:hover {
+        background: var(--line);
+      }
+    }
+
+    button + button::before {
+      content: "/";
+      margin-right: 3px;
+      color: var(--muted);
+    }
+
+    button:nth-child(2)::before {
+      content: none;
+    }
+  }
+
+  .pp-folder-browser-list {
+    max-height: 240px;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+
+    &[aria-busy="true"] {
+      opacity: 0.6;
+    }
+
+    li {
+      font-size: 13px;
+    }
+
+    li > button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 4px 6px;
+      border-radius: var(--radius-s);
+      text-align: left;
+
+      span {
+        .truncate();
+      }
+
+      &:hover {
+        background: var(--line);
+      }
+    }
+  }
+
+  .pp-folder-browser-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+}

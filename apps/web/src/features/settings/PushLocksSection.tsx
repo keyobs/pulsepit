@@ -15,7 +15,7 @@ interface PushLocksSectionProps {
   onChange: (value: LocksDraft) => void;
 }
 
-/** Verrous de push appliqués par Pulsepit (un `git push` en terminal reste possible). */
+/** Locking push in Pulsepit let them available throught terminal */
 export const PushLocksSection = ({
   value,
   repositories,
