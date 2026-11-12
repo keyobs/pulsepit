@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process';
+import { basename } from 'node:path';
 import { promisify, stripVTControlCharacters } from 'node:util';
 import type {
   OutdatedDependency,
@@ -14,6 +15,11 @@ import {
 } from './package-inventory.service.js';
 import { detectPackageManager } from './package-manager.service.js';
 import { registryDiagnostic } from './registry-diagnostic.service.js';
+import {
+  findNestedProjects,
+  findWorkspaces,
+  type WorkspaceDirectory,
+} from './workspaces.service.js';
 import { getYarnOutdatedDependencies } from './yarn-outdated.service.js';
 
 const execute = promisify(execFile);
@@ -31,7 +37,7 @@ type OutdatedFailure = {
   resetAt?: string;
 };
 export type OutdatedReport =
-  | Omit<OutdatedResponse, 'path' | 'packages'>
+  | Omit<OutdatedResponse, 'path' | 'packages' | 'workspaces'>
   | OutdatedFailure;
 export type OutdatedResult = Omit<OutdatedResponse, 'path'> | OutdatedFailure;
 
@@ -137,6 +143,51 @@ function parseDependencies(
 export async function getOutdatedDependencies(
   repositoryPath: string,
 ): Promise<OutdatedResult> {
+  const workspaces = await findWorkspaces(repositoryPath);
+  const projects = workspaces.length
+    ? []
+    : await findNestedProjects(repositoryPath);
+  const [root, ...nested] = await Promise.all([
+    diagnoseProject(repositoryPath, workspaces),
+    ...projects.map((project) =>
+      project.technology ? null : diagnoseProject(project.absolutePath, []),
+    ),
+  ]);
+  if (root.error !== null) return root;
+  return {
+    ...root,
+    workspaces: [
+      ...root.workspaces,
+      ...projects.map((project, index) => {
+        const result = nested[index];
+        if (!result)
+          return {
+            name: project.name,
+            path: project.path,
+            standalone: true,
+            technology: project.technology ?? null,
+            packageManager: null,
+            packages: [],
+            error: null,
+          };
+        return {
+          name: project.name,
+          path: project.path,
+          standalone: true,
+          technology: null,
+          packageManager: result.error === null ? result.packageManager : null,
+          packages: result.error === null ? result.packages : [],
+          error: result.error,
+        };
+      }),
+    ],
+  };
+}
+
+async function diagnoseProject(
+  repositoryPath: string,
+  workspaceDirectories: WorkspaceDirectory[],
+): Promise<OutdatedResult> {
   const manager = await detectPackageManager(repositoryPath);
   if (manager.error || manager.name === null) {
     return {
@@ -148,30 +199,78 @@ export async function getOutdatedDependencies(
   const declared = await readDeclaredDependencies(repositoryPath).catch(
     () => [],
   );
+  const workspaces = await Promise.all(
+    workspaceDirectories.map(async (workspace) => ({
+      ...workspace,
+      declared: await readDeclaredDependencies(workspace.absolutePath).catch(
+        () => [],
+      ),
+    })),
+  );
+  const allDeclared = [
+    ...declared,
+    ...workspaces.flatMap((workspace) => workspace.declared),
+  ];
   const scopes = await readPrivateScopes(repositoryPath);
   const isPrivate = (name: string) => isPrivatePackage(name, scopes);
   // With private packages, only public ones are queried: their registry may be unreachable.
-  const hasPrivate = declared.some(({ name }) => isPrivate(name));
+  const hasPrivate = allDeclared.some(({ name }) => isPrivate(name));
   const publicNames = hasPrivate
-    ? declared.map(({ name }) => name).filter((name) => !isPrivate(name))
+    ? [
+        ...new Set(
+          allDeclared
+            .filter(
+              ({ name, declared: range }) =>
+                !isPrivate(name) && !range.startsWith('workspace:'),
+            )
+            .map(({ name }) => name),
+        ),
+      ]
     : [];
-  const report: OutdatedReport = hasPrivate && !publicNames.length
-    ? { packageManager: manager.name, dependencies: [], error: null }
-    : manager.name === 'yarn'
-      ? await getYarnOutdatedDependencies(
-          repositoryPath,
-          publicNames,
-          isPrivate,
-        )
-      : await collectOutdated(repositoryPath, manager.name, publicNames);
+  const report: OutdatedReport =
+    hasPrivate && !publicNames.length
+      ? { packageManager: manager.name, dependencies: [], error: null }
+      : manager.name === 'yarn'
+        ? await getYarnOutdatedDependencies(
+            repositoryPath,
+            publicNames,
+            isPrivate,
+          )
+        : await collectOutdated(repositoryPath, manager.name, publicNames);
   if (report.error !== null) return report;
+  const owners = report.dependencies.map((entry) =>
+    workspaces.find(
+      (workspace) =>
+        entry.location === workspace.absolutePath ||
+        (entry.dependent !== null &&
+          (entry.dependent === workspace.name ||
+            entry.dependent === basename(workspace.absolutePath))),
+    ),
+  );
   return {
     ...report,
     packages: await buildPackageInventory(
       repositoryPath,
       declared,
-      report.dependencies,
+      report.dependencies.filter((_, index) => !owners[index]),
       scopes,
+    ),
+    workspaces: await Promise.all(
+      workspaces.map(async (workspace) => ({
+        name: workspace.name,
+        path: workspace.path,
+        standalone: false,
+        technology: null,
+        packageManager: manager.name,
+        error: null,
+        packages: await buildPackageInventory(
+          workspace.absolutePath,
+          workspace.declared,
+          report.dependencies.filter((_, index) => owners[index] === workspace),
+          scopes,
+          repositoryPath,
+        ),
+      })),
     ),
   };
 }

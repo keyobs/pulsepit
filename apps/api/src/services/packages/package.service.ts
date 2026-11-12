@@ -73,15 +73,23 @@ export type PackageManifestResult =
   | { manifest: PackageResponse['manifest']; error: null }
   | { manifest: null; error: string };
 
+export const isWorkspacePath = (workspace: string) =>
+  !workspace.includes('\\') &&
+  workspace
+    .split('/')
+    .every((segment) => segment !== '' && segment !== '.' && segment !== '..');
+
 export async function getPackageManifest(
   repositoryPath: string,
   ref: PackageRef,
+  workspace?: string,
 ): Promise<PackageManifestResult> {
   const git = createGitClient(repositoryPath);
+  const file = workspace ? `${workspace}/package.json` : 'package.json';
 
   let content: string;
   try {
-    content = await git.show([`${refs[ref]}:package.json`]);
+    content = await git.show([`${refs[ref]}:${file}`]);
   } catch {
     return {
       manifest: null,

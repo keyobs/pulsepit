@@ -53,6 +53,7 @@ export {
   OutdatedResponse,
   PackageDependency,
   RegistryDiagnosticCode,
+  WorkspacePackages,
 } from './outdated.js';
 export { PackageResponse } from './package.js';
 export {

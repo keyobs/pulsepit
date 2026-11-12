@@ -109,6 +109,7 @@ test('Classic normalizes standalone and workspace tables, preserves repeated pac
     path,
     packageManager: 'yarn',
     packages: [],
+    workspaces: [],
     dependencies: [
       {
         name: '@scope/library',

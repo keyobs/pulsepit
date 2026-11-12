@@ -129,6 +129,7 @@ else {
       packageManager: 'npm',
       dependencies: [],
       packages: [],
+      workspaces: [],
       error: null,
     });
   });
@@ -280,6 +281,7 @@ else {
         packageManager: 'pnpm',
         dependencies: [],
         packages: [],
+        workspaces: [],
         error: null,
       });
     },
@@ -456,6 +458,7 @@ else {
           packageManager: 'yarn',
           dependencies: [],
           packages: [],
+          workspaces: [],
           error: null,
         });
         await yarnFixture({
@@ -468,6 +471,7 @@ else {
           packageManager: 'yarn',
           dependencies: [],
           packages: [],
+          workspaces: [],
           error: null,
         });
       },

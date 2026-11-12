@@ -92,6 +92,7 @@ test('outdated contracts parse normalized npm, pnpm and modern Yarn reports, inc
       path,
       packageManager: manager,
       packages: [],
+      workspaces: [],
       dependencies: [
         {
           name: 'shared',
@@ -113,6 +114,7 @@ test('outdated contracts parse normalized npm, pnpm and modern Yarn reports, inc
     packageManager: 'yarn',
     dependencies: [],
     packages: [],
+    workspaces: [],
     error: null,
   });
 });
