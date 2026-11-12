@@ -6,7 +6,7 @@ import { Tabs } from '@components/tabs/Tabs';
 import { useDisclosure } from '@hooks/useDisclosure';
 import { useRetryDeadline } from '@hooks/useRetryDeadline';
 import { describeApiError } from '@utils/describeApiError';
-import { formatTime } from '@utils/formatDate';
+import { formatDateTime, formatTime } from '@utils/formatDate';
 import { useMemo, useState } from 'react';
 import { TbPackageImport, TbStethoscope } from 'react-icons/tb';
 import { useRepositoryRuntime } from '../../hooks/useRepositoryRuntime';
@@ -23,7 +23,7 @@ interface DependenciesTabProps {
 export const DependenciesTab = ({ repository }: DependenciesTabProps) => {
   const { outdated, install } = useRepositoryRuntime(repository.path);
   const manifest = useDisclosure();
-  const { status, data, error } = outdated.state;
+  const { status, data, error, updatedAt } = outdated.state;
   const retryAt = useRetryDeadline(error);
   const views = useMemo(() => (data ? toPackageViews(data) : []), [data]);
   const [activeId, setActiveId] = useState(ALL_VIEW_ID);
@@ -66,6 +66,11 @@ export const DependenciesTab = ({ repository }: DependenciesTabProps) => {
           >
             {manifest.isOpen ? 'Masquer package.json' : 'Voir package.json'}
           </Button>
+          {updatedAt && (
+            <span className="pp-dependencies-tab-updated">
+              Diagnostic du {formatDateTime(new Date(updatedAt).toISOString())}
+            </span>
+          )}
         </div>
         <ToolchainInfo repository={repository} />
       </div>

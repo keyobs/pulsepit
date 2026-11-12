@@ -2,7 +2,6 @@ import { EmptyState } from '@components/emptyState/EmptyState';
 import { Spinner } from '@components/spinner/Spinner';
 import { usePackageManifest } from '@hooks/usePackageManifest';
 import { describeApiError } from '@utils/describeApiError';
-import { useEffect } from 'react';
 import './packageJsonViewer.less';
 
 interface PackageJsonViewerProps {
@@ -15,11 +14,7 @@ export const PackageJsonViewer = ({
   path,
   workspace,
 }: PackageJsonViewerProps) => {
-  const { data, status, error, run } = usePackageManifest(path, workspace);
-
-  useEffect(() => {
-    void run('head');
-  }, [run]);
+  const { data, status, error } = usePackageManifest(path, workspace);
 
   if (status === 'error')
     return <EmptyState>{describeApiError(error)}</EmptyState>;

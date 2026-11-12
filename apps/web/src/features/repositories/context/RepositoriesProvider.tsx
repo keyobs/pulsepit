@@ -19,7 +19,11 @@ export const RepositoriesProvider = ({
   const list = useRepositories();
   useRescanWatcher(list.reload);
   const fetching = useFetchActions(list.reload);
-  const diagnostics = useOutdatedActions();
+  const paths = useMemo(
+    () => list.repositories.map(({ path }) => path),
+    [list.repositories],
+  );
+  const diagnostics = useOutdatedActions(paths);
   const installs = useInstallActions();
   const deployments = useDeploymentActions();
   const view = useExpandedRepositories();
