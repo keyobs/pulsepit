@@ -6,6 +6,7 @@ interface ChipProps {
   variant?: 'neutral' | 'ok' | 'warn' | 'bad' | 'accent';
   icon?: ReactNode;
   title?: string;
+  truncate?: boolean;
   children: ReactNode;
 }
 
@@ -13,10 +14,14 @@ export const Chip = ({
   variant = 'neutral',
   icon,
   title,
+  truncate = false,
   children,
 }: ChipProps) => (
-  <span className={cleanClasses('pp-chip', variant)} title={title}>
+  <span
+    className={cleanClasses('pp-chip', variant, truncate && 'truncated')}
+    title={title}
+  >
     {icon}
-    {children}
+    {truncate ? <span className="pp-chip-text">{children}</span> : children}
   </span>
 );

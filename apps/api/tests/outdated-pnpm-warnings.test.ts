@@ -79,6 +79,7 @@ test('pnpm reports remain valid when legacy warnings surround the JSON, includin
       path,
       packageManager: 'pnpm',
       packages: [],
+      workspaces: [],
       dependencies: [
         {
           name: '@scope/library',

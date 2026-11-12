@@ -72,20 +72,20 @@ export async function readPrivateScopes(
 export const isPrivatePackage = (name: string, scopes: Set<string>) =>
   name.startsWith('@') && scopes.has(name.slice(0, name.indexOf('/')));
 
-async function installedVersion(repositoryPath: string, name: string) {
-  try {
-    const manifest: unknown = JSON.parse(
-      await readFile(
-        join(repositoryPath, 'node_modules', name, 'package.json'),
-        'utf8',
-      ),
-    );
-    return isObject(manifest) && typeof manifest.version === 'string'
-      ? manifest.version
-      : null;
-  } catch {
-    return null;
+async function installedVersion(roots: string[], name: string) {
+  for (const root of roots) {
+    try {
+      const manifest: unknown = JSON.parse(
+        await readFile(
+          join(root, 'node_modules', name, 'package.json'),
+          'utf8',
+        ),
+      );
+      if (isObject(manifest) && typeof manifest.version === 'string')
+        return manifest.version;
+    } catch {}
   }
+  return null;
 }
 
 export async function buildPackageInventory(
@@ -93,10 +93,13 @@ export async function buildPackageInventory(
   declared: DeclaredDependency[],
   outdated: OutdatedDependency[],
   scopes: Set<string>,
+  hoistedRoot?: string,
 ): Promise<PackageDependency[]> {
+  // Workspace dependencies may be hoisted to the repository root.
+  const roots = hoistedRoot ? [repositoryPath, hoistedRoot] : [repositoryPath];
   const packages = await Promise.all(
     declared.map(async (dependency): Promise<PackageDependency> => {
-      const installed = await installedVersion(repositoryPath, dependency.name);
+      const installed = await installedVersion(roots, dependency.name);
       if (isPrivatePackage(dependency.name, scopes))
         return {
           ...dependency,

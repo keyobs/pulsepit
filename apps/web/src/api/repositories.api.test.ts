@@ -131,6 +131,7 @@ describe('repositories api', () => {
         packageManager: 'pnpm',
         dependencies: [],
         packages: [],
+        workspaces: [],
         error: null,
       }),
     );

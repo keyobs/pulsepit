@@ -22,6 +22,7 @@ import {
 import { resolveRepositoryGitPolicy } from '../../services/git/git-policy-source.service.js';
 import {
   getPackageManifest,
+  isWorkspacePath,
   type PackageRef,
 } from '../../services/packages/package.service.js';
 import {
@@ -249,7 +250,9 @@ export const getRepositoriesRoutes: FastifyPluginAsync<
     },
   );
 
-  app.get<{ Querystring: { path: string; ref?: PackageRef } }>(
+  app.get<{
+    Querystring: { path: string; ref?: PackageRef; workspace?: string };
+  }>(
     '/package',
     {
       schema: {
@@ -259,12 +262,16 @@ export const getRepositoriesRoutes: FastifyPluginAsync<
           properties: {
             path: { type: 'string', minLength: 1 },
             ref: { type: 'string', enum: ['head', 'main', 'develop'] },
+            workspace: { type: 'string', minLength: 1 },
           },
         },
       },
     },
     async (request, reply) => {
-      const { path, ref = 'head' } = request.query;
+      const { path, ref = 'head', workspace } = request.query;
+      if (workspace !== undefined && !isWorkspacePath(workspace)) {
+        return reply.code(400).send({ error: 'Invalid workspace path.' });
+      }
       const repository = await findConfiguredRepository(
         path,
         options.scanPaths,
@@ -275,7 +282,7 @@ export const getRepositoriesRoutes: FastifyPluginAsync<
         });
       }
 
-      const result = await getPackageManifest(repository.path, ref);
+      const result = await getPackageManifest(repository.path, ref, workspace);
       if (result.manifest === null) {
         return reply.code(422).send({ error: result.error });
       }

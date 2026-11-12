@@ -63,9 +63,13 @@ export const installDependencies = (path: string) =>
     timeoutMs: INSTALL_REQUEST_TIMEOUT_MS,
   });
 
-export const getPackage = (path: string, ref: PackageRef = 'head') =>
+export const getPackage = (
+  path: string,
+  ref: PackageRef = 'head',
+  workspace?: string,
+) =>
   apiRequest(`${BASE}/package`, {
-    query: { path, ref },
+    query: { path, ref, workspace },
     schema: PackageResponse,
   });
 

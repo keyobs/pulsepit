@@ -22,4 +22,19 @@ describe('Chip', () => {
     render(<Chip icon={<svg data-testid="icon" />}>Online</Chip>);
     expect(screen.getByTestId('icon')).toBeInTheDocument();
   });
+
+  it('wraps truncated content and keeps the full text in the tooltip', () => {
+    render(
+      <Chip title="feature/very-long-branch" truncate>
+        feature/very-long-branch
+      </Chip>,
+    );
+    const text = screen.getByText('feature/very-long-branch');
+    expect(text).toHaveClass('pp-chip-text');
+    expect(text.parentElement).toHaveClass('pp-chip', 'truncated');
+    expect(text.parentElement).toHaveAttribute(
+      'title',
+      'feature/very-long-branch',
+    );
+  });
 });

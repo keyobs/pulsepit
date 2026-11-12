@@ -41,11 +41,27 @@ export const PackageDependency = z.object({
 
 export type PackageDependency = z.infer<typeof PackageDependency>;
 
+// Path is relative to the repository, with forward slashes.
+// Standalone = sub-project with its own lockfile, diagnosed in its folder.
+// Technology set = non-Node project (e.g. "C# / .NET"), not diagnosed.
+export const WorkspacePackages = z.object({
+  name: z.string().nullable(),
+  path: z.string().min(1),
+  standalone: z.boolean(),
+  technology: z.string().nullable(),
+  packageManager: z.enum(['npm', 'pnpm', 'yarn']).nullable(),
+  packages: z.array(PackageDependency),
+  error: z.string().nullable(),
+});
+
+export type WorkspacePackages = z.infer<typeof WorkspacePackages>;
+
 export const OutdatedResponse = z.object({
   path: z.string(),
   packageManager: z.enum(['npm', 'pnpm', 'yarn']),
   dependencies: z.array(OutdatedDependency),
   packages: z.array(PackageDependency),
+  workspaces: z.array(WorkspacePackages),
   error: z.null(),
 });
 

@@ -1,5 +1,4 @@
 import { BEACON_PACKAGE_NAME } from '@constants/beacon';
-import { useEffect } from 'react';
 import { usePackageManifest } from './usePackageManifest';
 
 const declaredVersion = (
@@ -13,11 +12,12 @@ const declaredVersion = (
 };
 
 export function useBeaconVersion(path: string, enabled: boolean) {
-  const { data, status, run } = usePackageManifest(path);
-
-  useEffect(() => {
-    if (enabled) void run('head');
-  }, [enabled, run]);
+  const { data, isPending } = usePackageManifest(
+    path,
+    undefined,
+    'head',
+    enabled,
+  );
 
   const version = data
     ? (declaredVersion(data.manifest, 'dependencies') ??
@@ -26,6 +26,6 @@ export function useBeaconVersion(path: string, enabled: boolean) {
 
   return {
     version,
-    isLoading: enabled && (status === 'idle' || status === 'loading'),
+    isLoading: enabled && isPending,
   };
 }
