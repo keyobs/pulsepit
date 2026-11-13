@@ -6,6 +6,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const OUTDATED_QUERY = 'outdated';
 export const PACKAGE_QUERY = 'package';
+export const GIT_TREE_QUERY = 'git-tree';
 
 export const createQueryClient = () =>
   new QueryClient({

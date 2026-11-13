@@ -36,6 +36,11 @@ export {
 } from './git-policy.js';
 export { GitPolicyFile } from './git-policy-file.js';
 export {
+  GitBranchSummary,
+  GitCommitSummary,
+  GitTreeResponse,
+} from './git-tree.js';
+export {
   GithubActionsRun,
   GithubActionsRunsResponse,
 } from './github-actions.js';
