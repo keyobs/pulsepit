@@ -2,6 +2,7 @@ import type { TabItem } from '@components/tabs/Tabs';
 
 export type PanelTabId =
   | 'git'
+  | 'gitTree'
   | 'dependencies'
   | 'beacon'
   | 'deployment'
@@ -10,6 +11,7 @@ export type PanelTabId =
 
 export const PANEL_TABS: TabItem<PanelTabId>[] = [
   { id: 'git', label: 'Git' },
+  { id: 'gitTree', label: 'Git Tree' },
   { id: 'dependencies', label: 'Dépendances' },
   { id: 'beacon', label: 'Beacon' },
   { id: 'deployment', label: 'Déploiement' },

@@ -9,6 +9,7 @@ import {
   ChecksOperation,
   DeploymentsResponse,
   FetchResponse,
+  GitTreeResponse,
   InstallResponse,
   ListRepositoriesResponse,
   MonitoringResponse,
@@ -91,6 +92,9 @@ export const getWorkflows = (path: string) =>
     query: { path },
     schema: WorkflowsResponse,
   });
+
+export const getGitTree = (path: string) =>
+  apiRequest(`${BASE}/git-tree`, { query: { path }, schema: GitTreeResponse });
 
 export const getOrigin = (path: string) =>
   apiRequest(`${BASE}/origin`, { query: { path }, schema: OriginResponse });

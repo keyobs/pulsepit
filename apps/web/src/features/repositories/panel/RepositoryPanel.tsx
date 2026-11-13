@@ -7,6 +7,7 @@ import { BeaconTab } from './beaconTab/BeaconTab';
 import { DependenciesTab } from './dependenciesTab/DependenciesTab';
 import { DeploymentTab } from './deploymentTab/DeploymentTab';
 import { GitTab } from './gitTab/GitTab';
+import { GitTreeTab } from './gitTreeTab/GitTreeTab';
 import './repositoryPanel.less';
 
 interface RepositoryPanelProps {
@@ -18,6 +19,7 @@ const TAB_CONTENT: Record<
   (repository: Repository) => React.ReactNode
 > = {
   git: (repository) => <GitTab repository={repository} />,
+  gitTree: (repository) => <GitTreeTab path={repository.path} />,
   dependencies: (repository) => <DependenciesTab repository={repository} />,
   beacon: (repository) => <BeaconTab repository={repository} />,
   deployment: (repository) => <DeploymentTab repository={repository} />,

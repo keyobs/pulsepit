@@ -5,6 +5,7 @@ import {
   getBeaconMonitoring,
   getBranches,
   getDeployments,
+  getGitTree,
   getOrigin,
   getOutdated,
   getPackage,
@@ -122,6 +123,17 @@ describe('repositories api', () => {
       `/api/repositories/branches?path=${encodeURIComponent(PATH)}`,
     );
     expect(result.branches).toHaveLength(1);
+  });
+
+  it('reads the git tree', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({ path: PATH, mainRef: null, commits: [], branches: [] }),
+    );
+    const result = await getGitTree(PATH);
+    expect(lastCall().url).toBe(
+      `/api/repositories/git-tree?path=${encodeURIComponent(PATH)}`,
+    );
+    expect(result.mainRef).toBeNull();
   });
 
   it('runs the outdated diagnostic', async () => {
