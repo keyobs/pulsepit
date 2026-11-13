@@ -1,6 +1,7 @@
 import type {
   BranchesResponse,
   ErrorResponse,
+  GitTreeResponse,
   ListRepositoriesResponse,
   OriginResponse,
   PackageResponse,
@@ -20,6 +21,7 @@ import {
   repositoryGitPolicy,
 } from '../../services/git/git-policy.service.js';
 import { resolveRepositoryGitPolicy } from '../../services/git/git-policy-source.service.js';
+import { getGitTree } from '../../services/git/git-tree.service.js';
 import {
   getPackageManifest,
   isWorkspacePath,
@@ -247,6 +249,44 @@ export const getRepositoriesRoutes: FastifyPluginAsync<
           }),
         ),
       } satisfies BranchesResponse;
+    },
+  );
+
+  app.get<{ Querystring: { path: string } }>(
+    '/git-tree',
+    {
+      schema: {
+        querystring: {
+          type: 'object',
+          required: ['path'],
+          properties: {
+            path: { type: 'string', minLength: 1, pattern: '\\S' },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const repository = await findConfiguredRepository(
+        request.query.path,
+        options.scanPaths,
+      );
+      if (!repository) {
+        return reply.code(404).send({
+          error: 'Repository not found in configured scan directories.',
+        });
+      }
+      try {
+        return {
+          path: repository.path,
+          ...(await getGitTree(repository.path)),
+        } satisfies GitTreeResponse;
+      } catch (error) {
+        const timeout = (error as { killed?: boolean }).killed === true;
+        return reply.code(timeout ? 504 : 502).send({
+          error: timeout ? 'Git command timed out.' : 'Unable to read Git log.',
+          code: timeout ? 'TIMEOUT' : 'GIT_FAILED',
+        } satisfies ErrorResponse);
+      }
     },
   );
 
