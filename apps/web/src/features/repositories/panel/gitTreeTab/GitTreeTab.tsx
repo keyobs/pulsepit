@@ -13,17 +13,19 @@ import { describeApiError } from '@utils/describeApiError';
 import { formatDateTime } from '@utils/formatDate';
 import './gitTreeTab.less';
 
+const CommitHash = ({ commit }: { commit: GitCommitSummary }) => (
+  <span className="pp-git-tree-tab-hash" title={commit.hash}>
+    {commit.shortHash}
+    <CopyButton value={commit.hash} label="Copier le hash" />
+  </span>
+);
+
 const COMMIT_COLUMNS: DataTableColumn<GitCommitSummary>[] = [
   { key: 'date', header: 'Date', render: (row) => formatDateTime(row.date) },
   {
     key: 'hash',
     header: 'Commit',
-    render: (row) => (
-      <span className="pp-git-tree-tab-hash" title={row.hash}>
-        {row.shortHash}
-        <CopyButton value={row.hash} label="Copier le hash" />
-      </span>
-    ),
+    render: (row) => <CommitHash commit={row} />,
     mono: true,
   },
   { key: 'subject', header: 'Titre', render: (row) => row.subject },
@@ -52,6 +54,21 @@ const BRANCH_COLUMNS: DataTableColumn<GitBranchSummary>[] = [
     render: (row) => formatDateTime(row.createdAt),
   },
   { key: 'author', header: 'Auteur', render: (row) => row.author },
+  {
+    key: 'lastCommit',
+    header: 'Dernier commit',
+    render: ({ lastCommit }) => (
+      <>
+        <span className="pp-git-tree-tab-last">
+          <CommitHash commit={lastCommit} />
+          {lastCommit.subject}
+        </span>
+        <div className="pp-git-tree-tab-meta">
+          {formatDateTime(lastCommit.date)} · {lastCommit.author}
+        </div>
+      </>
+    ),
+  },
 ];
 
 interface GitTreeTabProps {

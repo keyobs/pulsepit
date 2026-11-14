@@ -39,12 +39,26 @@ describe('GitTreeTab', () => {
             author: 'Bob',
             createdAt: '2025-02-01T10:00:00.000Z',
             merged: false,
+            lastCommit: {
+              hash: 'b'.repeat(40),
+              shortHash: 'bbbbbbb',
+              subject: 'fix: last one',
+              author: 'Zed',
+              date: '2025-02-03T10:00:00.000Z',
+            },
           },
           {
             name: 'fix/y',
             author: 'Cy',
             createdAt: '2025-01-15T10:00:00.000Z',
             merged: true,
+            lastCommit: {
+              hash: 'c'.repeat(40),
+              shortHash: 'ccccccc',
+              subject: 'chore: merged',
+              author: 'Cy',
+              date: '2025-01-16T10:00:00.000Z',
+            },
           },
         ],
       },
@@ -58,5 +72,8 @@ describe('GitTreeTab', () => {
     expect(screen.getByText('feature/x')).toBeInTheDocument();
     expect(screen.getByText('Bob')).toBeInTheDocument();
     expect(screen.getAllByText('merged')).toHaveLength(1);
+    expect(screen.getByText('bbbbbbb')).toBeInTheDocument();
+    expect(screen.getByText('fix: last one')).toBeInTheDocument();
+    expect(screen.getByText(/· Zed$/)).toBeInTheDocument();
   });
 });
