@@ -120,6 +120,12 @@ test('lists the last 10 origin/main commits and the 3 newest origin branches', a
       ['feature/b', 'Dee', '2025-03-03T09:00:00.000Z', false],
     ],
   );
+  const last = parsed.branches[0]?.lastCommit;
+  assert.equal(last?.subject, 'feature/a later');
+  assert.equal(last?.author, 'Zed');
+  assert.equal(last?.date, '2025-04-01T09:00:00.000Z');
+  assert.match(last?.hash ?? '', /^[0-9a-f]{40}$/);
+  assert.ok(last?.hash.startsWith(last.shortHash));
 });
 
 test('flags branches contained in main, except fresh ones at the main tip', async (t) => {

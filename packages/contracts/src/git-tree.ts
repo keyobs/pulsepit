@@ -15,6 +15,7 @@ export const GitBranchSummary = z.object({
   author: z.string(),
   createdAt: z.string(),
   merged: z.boolean(),
+  lastCommit: GitCommitSummary,
 });
 
 export type GitBranchSummary = z.infer<typeof GitBranchSummary>;

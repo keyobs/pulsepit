@@ -107,7 +107,7 @@ async function readBranches(
     'for-each-ref',
     '--sort=-committerdate',
     `--count=${BRANCH_CANDIDATES + 2}`,
-    `--format=%(refname)${FIELD}%(symref)${FIELD}%(authorname)${FIELD}%(authordate:unix)${FIELD}%(objectname)`,
+    `--format=%(refname)${FIELD}%(symref)${FIELD}%(authorname)${FIELD}%(authordate:unix)${FIELD}%(objectname)${FIELD}%(objectname:short)${FIELD}%(contents:subject)`,
     'refs/remotes/origin/',
   ]);
   const candidates = lines(output)
@@ -116,17 +116,27 @@ async function readBranches(
     .slice(0, BRANCH_CANDIDATES);
 
   const branches = await Promise.all(
-    candidates.map(async ([ref = '', , author = '', unix = '', sha = '']) => {
+    candidates.map(async (fields) => {
+      const [ref = '', , author = '', unix = '', sha = '', shortHash = ''] =
+        fields;
       const found = await firstOwnCommit(repositoryPath, ref, mainRef);
       const own = typeof found === 'object' ? found : null;
-      const createdAt = own?.createdAt ?? toIso(unix);
-      if (createdAt === null) return null;
+      const lastCommitAt = toIso(unix);
+      const createdAt = own?.createdAt ?? lastCommitAt;
+      if (createdAt === null || lastCommitAt === null) return null;
       return {
         name: ref.slice('refs/remotes/origin/'.length),
         author: own?.author ?? author,
         createdAt,
         // Same tip as main: freshly created, not merged.
         merged: found === 'merged' && sha !== main?.sha,
+        lastCommit: {
+          hash: sha,
+          shortHash,
+          subject: fields.slice(6).join(FIELD),
+          author,
+          date: lastCommitAt,
+        },
       };
     }),
   );
